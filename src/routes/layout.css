@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+/* Шрифт из node_modules уезжает в бандл. Без похода в Google Fonts. */
+@import '@fontsource-variable/noto-sans/wght.css';
+
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+/* Приложение — карта на весь экран, а не документ для прокрутки. У корневого
+   div уже h-dvh, но svelte-announcer (аннонсер переходов SvelteKit) — его
+   сосед, а не потомок, и обрезать себя не даёт: запрещаем прокрутку выше. */
+html,
+body {
+	height: 100%;
+	overflow: hidden;
+}
+
+/* Плавающие панели стоят в 16px от края — копирайт maplibre ставим туда же,
+   иначе он висит на своих 10px и ломает общую сетку отступов. */
+.maplibregl-map .maplibregl-ctrl-bottom-right,
+.maplibregl-map .maplibregl-ctrl-bottom-left {
+	bottom: 16px;
+}
+
+.maplibregl-map .maplibregl-ctrl-bottom-right {
+	right: 16px;
+}
+
+.maplibregl-map .maplibregl-ctrl-bottom-left {
+	left: 16px;
+}
+
+/* Тени в проекте не используем: у контролов maplibre они свои, снимаем. */
+.maplibregl-map .maplibregl-ctrl-group {
+	box-shadow: none;
+	border: 1px solid var(--color-slate-200);
+}
+
+@theme {
+	--font-sans:
+		'Noto Sans Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
