@@ -123,7 +123,7 @@
 				<input
 					bind:value={org}
 					required
-					placeholder="Заповедник «Утриш»"
+					placeholder="Кроноцкий заповедник"
 					class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
 				/>
 			</label>
@@ -151,14 +151,14 @@
 				<input
 					bind:value={cadastral}
 					required
-					placeholder="23:37:0000000:1"
+					placeholder="41:01:0000000:1"
 					class="rounded-lg border px-3 py-2 text-sm text-slate-900 {cadastralValid
 						? 'border-slate-300'
 						: 'border-amber-300'}"
 				/>
 				{#if !cadastralValid}
 					<span class="flex items-center gap-1.5 text-amber-700">
-						<CircleAlert size={13} /> Формат: 23:37:0000000:1
+						<CircleAlert size={13} /> Формат: 41:01:0000000:1
 					</span>
 				{/if}
 			</label>

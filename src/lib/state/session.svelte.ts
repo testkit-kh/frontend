@@ -3,6 +3,10 @@ import type { Role, User } from '$lib/types';
 
 const KEY = 'kosmo.session';
 
+// Заглушка на время прототипа: реальная привязка сотрудника к ООПТ приходит
+// с бэка в /auth/me. Кроноцкий — первая территория проекта «Чистый берег».
+const MOCK_STAFF_ORG = 'kronotsky';
+
 class Session {
 	user = $state<User | null>(null);
 	ready = $state(false);
@@ -32,7 +36,7 @@ class Session {
 			name: role === 'staff' ? 'Сотрудник ООПТ' : 'Волонтёр',
 			email,
 			role,
-			organizationId: role === 'staff' ? 'utrish' : undefined,
+			organizationId: role === 'staff' ? MOCK_STAFF_ORG : undefined,
 			onboarded: true
 		};
 		this.#persist();
@@ -44,7 +48,7 @@ class Session {
 			name: name.trim() || 'Волонтёр',
 			email,
 			role,
-			organizationId: role === 'staff' ? 'utrish' : undefined,
+			organizationId: role === 'staff' ? MOCK_STAFF_ORG : undefined,
 			onboarded: true
 		};
 		this.#persist();

@@ -4,8 +4,16 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { session } from '$lib/state/session.svelte';
+	import type { Territory } from '$lib/data/territories';
 
 	const user = $derived(session.user);
+
+	// Название ООПТ берётся из загруженных территорий, а не зашивается в вёрстку:
+	// в проекте их 19, от Кроноцкого до Куршской косы.
+	const territories = $derived((page.data?.territories ?? []) as Territory[]);
+	const orgName = $derived(
+		territories.find((t) => t.id === user?.organizationId)?.name ?? ''
+	);
 
 	const links = $derived(
 		user?.role === 'staff'
@@ -48,7 +56,7 @@
 		<div class="hidden text-right sm:block">
 			<p class="text-sm font-medium text-slate-900">{user.name}</p>
 			<p class="text-xs text-slate-500">
-				{user.role === 'staff' ? 'Сотрудник ООПТ · Утриш' : 'Волонтёр'}
+				{user.role === 'staff' ? `Сотрудник ООПТ${orgName ? ` · ${orgName}` : ''}` : 'Волонтёр'}
 			</p>
 		</div>
 		<button

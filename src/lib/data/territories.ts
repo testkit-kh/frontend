@@ -5,6 +5,9 @@ export type Territory = {
 	name: string;
 	fullName: string;
 	region: string;
+	/** Море или озеро, к которому примыкает территория. Определяет, от какого
+	 *  берега строится прибрежная буферная зона. */
+	waterBody: string;
 	bounds: LngLatBoundsLike;
 	source: string;
 	geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
