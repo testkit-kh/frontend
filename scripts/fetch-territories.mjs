@@ -208,7 +208,6 @@ function toBounds(box) {
 const features = [];
 const missing = [];
 const cache = await loadCache();
-let fetched = 0;
 
 for (const territory of TERRITORIES) {
 	let hit = cache[territory.id];
@@ -216,7 +215,6 @@ for (const territory of TERRITORIES) {
 	if (!hit) {
 		hit = pickPolygon(await search(territory.query)) ?? null;
 		cache[territory.id] = hit;
-		fetched += 1;
 		await sleep(1100);
 	}
 

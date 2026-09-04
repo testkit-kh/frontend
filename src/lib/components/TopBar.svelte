@@ -11,9 +11,7 @@
 	// Название ООПТ берётся из загруженных территорий, а не зашивается в вёрстку:
 	// в проекте их 19, от Кроноцкого до Куршской косы.
 	const territories = $derived((page.data?.territories ?? []) as Territory[]);
-	const orgName = $derived(
-		territories.find((t) => t.id === user?.organizationId)?.name ?? ''
-	);
+	const orgName = $derived(territories.find((t) => t.id === user?.organizationId)?.name ?? '');
 
 	const links = $derived(
 		user?.role === 'staff'

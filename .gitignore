@@ -11,7 +11,7 @@ node_modules
 /.claude
 /.vscode
 
-scripts/cache
+scripts/.cache
 
 # OS
 .DS_Store
