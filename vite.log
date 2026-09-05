@@ -1,0 +1,616 @@
+(node:33596) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `pnpm --trace-warnings ...` to show where the warning was created)
+$ vite dev "--port" "5173" "--host"
+Port 5173 is in use, trying another one...
+
+  [32m[1mVITE[22m v8.2.2[39m  [2mready in [0m[1m2434[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5174[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://10.8.1.1:[1m5174[22m/[39m      [2mAmneziaVPN[22m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.0.10:[1m5174[22m/[39m  [2mEthernet[22m
+
+[1;31m[404] GET /favicon.ico[0m
+
+[1;31m[404] GET /favicon.ico[0m
+[2m10:20:04 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/components/Logo.svelte, /src/routes/layout.css[22m
+[2m10:20:04 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/lib/components/Logo.svelte[22m
+[2m10:20:16 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:20:16 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2mstatic/icons/icon.svg[22m
+[2m10:22:54 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:22:54 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:28:25 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:28:25 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/lib/map/PollutionMap.svelte[22m
+[2m10:28:46 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:28:46 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:28:57 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:28:57 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:29:22 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:29:22 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:31:13 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:31:13 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:31:40 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:31:40 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:33:38 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:33:38 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+
+[1;31m[404] GET /favicon.ico[0m
+
+[1;31m[404] GET /favicon.ico[0m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/layout.css[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/lib/components/SatelliteView.svelte[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+n node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:26:03 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte:1136:17
+    
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:26:03 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte:1136:17
+    
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:27:21 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte:1136:17
+    
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:28:25 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/map/PollutionMap.svelte, /src/routes/layout.css[22m
+[2m10:28:25 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/lib/map/PollutionMap.svelte[22m
+
+[1;31m[404] GET /favicon.ico[0m
+[2m10:28:46 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:28:46 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:28:57 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:28:57 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:29:22 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:29:22 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:29:29 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:29:35 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:29:36 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:29:41 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:29:43 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:31:13 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:31:13 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:31:40 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:31:40 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:32:33 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:32:35 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:32:39 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mSvelte error[22m: each_key_duplicate
+Keyed each block has duplicate key `1` at indexes 0 and 500
+https://svelte.dev/e/each_key_duplicate
+
+  in <unknown>
+  in MapLibre.svelte
+  in PollutionMap.svelte
+  in +page.svelte
+  in +layout.svelte
+  in +layout.svelte
+  in root.svelte
+  in undefined
+
+[39m > each_key_duplicate node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/errors.js:138:16
+ > validate_each_keys node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:771:24
+ > each/state.effect< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:357:23
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > block node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:416:14
+ > each node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/each.js:266:14
+ > PollutionMap/</<.children</consequent_9/< src/lib/map/PollutionMap.svelte?t=1788636505039:1136:17
+ > add_svelte_meta node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/context.js:51:9
+ > consequent_9 src/lib/map/PollutionMap.svelte?t=1788636505039:1135:10
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:21
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > create_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:139:17
+ > branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/effects.js:439:8
+ > ensure node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js:204:5
+ > update_branch node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:57:11
+ > if_block/</< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:65:17
+ > PollutionMap/</<.children</</< src/lib/map/PollutionMap.svelte:482:15
+    480 |  	{/if}
+    481 |  
+    482 |  	{#if mlVisible}
+        |                 ^
+    483 |  		{#each mlMarkers as mark (mark.id)}
+    484 |  			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+ > if_block/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/blocks/if.js:63:2
+ > update_reaction node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:259:15
+ > update_effect node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/runtime.js:490:33
+ > #traverse node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:456:19
+ > #process node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:326:19
+ > flush node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:619:17
+ > ensure/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/reactivity/batch.js:866:12
+ > run_all node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/shared/utils.js:47:9
+ > run_micro_tasks node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:10:9
+ > queue_micro_task/< node_modules/.pnpm/svelte@5.57.0_@typescript-eslint+types@8.69.0/node_modules/svelte/src/internal/client/dom/task.js:28:30
+
+[2m10:33:38 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:33:38 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/components/SatelliteView.svelte, /src/routes/layout.css[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/lib/components/SatelliteView.svelte[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes/(app)/map/+page.svelte, /src/routes/layout.css[22m
+[2m10:38:36 pm[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m [32mpage reload [39m[2msrc/routes/(app)/map/+page.svelte[22m

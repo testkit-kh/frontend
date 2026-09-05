@@ -9,6 +9,8 @@
 		Marker,
 		NavigationControl,
 		Popup,
+		RasterLayer,
+		RasterTileSource,
 		ScaleControl,
 		SymbolLayer
 	} from 'svelte-maplibre';
@@ -17,6 +19,7 @@
 	import { untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { Radar } from '@lucide/svelte';
+	import type { SatelliteScene } from '$lib/api/endpoints';
 	import type { Report } from '$lib/types';
 	import { territoriesFeature, type Territory } from '$lib/data/territories';
 	import { healthByTerritory } from '$lib/state/health';
@@ -45,6 +48,9 @@
 		mlOverlay = { type: 'FeatureCollection', features: [] },
 		mlVisible = true,
 		onmlselect,
+		/** Слой Sentinel NDWI поверх видимой области. */
+		sentinelVisible = false,
+		sentinelScene = null as SatelliteScene | null,
 		// eslint-disable-next-line no-useless-assignment -- $bindable нужен родителю с первого кадра
 		mapApi = $bindable(null),
 		/** Точка из URL (?lat=&lon=) — один раз, потом родитель чистит. */
@@ -80,6 +86,8 @@
 		mlOverlay?: GeoJSON.FeatureCollection;
 		mlVisible?: boolean;
 		onmlselect?: (properties: Record<string, unknown>) => void;
+		sentinelVisible?: boolean;
+		sentinelScene?: SatelliteScene | null;
 		mapApi?: {
 			getMapBounds: () => {
 				bbox: [number, number, number, number];
@@ -279,6 +287,19 @@
 			}}
 		/>
 	</GeoJSON>
+
+	{#if sentinelVisible && sentinelScene}
+		<!-- Реальный Sentinel-2, индекс NDWI: под векторными слоями, чтобы точки
+		     и полигоны находок оставались читаемыми поверх снимка. -->
+		<RasterTileSource
+			id="sentinel-ndwi"
+			tiles={[sentinelScene.tile_url_ndwi]}
+			tileSize={256}
+			maxzoom={18}
+		>
+			<RasterLayer paint={{ 'raster-opacity': 0.7 }} />
+		</RasterTileSource>
+	{/if}
 
 	<!-- Кадастровые участки — «кому принадлежит», отдельно от собственных
 	     полигонов-находок (areas): один описывает территорию владения, другой —

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Plus, ScanSearch, SquareDashed, X } from '@lucide/svelte';
+	import { Plus, ScanSearch, Satellite, SquareDashed, X } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { ApiError } from '$lib/api/client';
-	import { hypotheses, ml } from '$lib/api/endpoints';
+	import { hypotheses, ml, satellite, type SatelliteScene } from '$lib/api/endpoints';
 	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
 	import PollutionMap from '$lib/map/PollutionMap.svelte';
 	import ReportList from '$lib/components/ReportList.svelte';
@@ -90,6 +90,15 @@
 	/** Принудительный fitBounds при клике «Моя территория» / смене ООПТ. */
 	let viewEpoch = $state(0);
 
+	/** Кнопки скана/рисования ИИ спрятаны, пока сервис не настроен — иначе клик
+	 *  на ещё не подключённой демо-инсталляции ведёт в тупик с ошибкой сети. */
+	let mlConfigured = $state(false);
+	$effect(() => {
+		ml.health()
+			.then((h) => (mlConfigured = h.configured))
+			.catch(() => (mlConfigured = false));
+	});
+
 	let mlOverlay = $state<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
 	/** Ручной тумблер «Слой ML». Автоматически слой ещё виден, пока открыто окошко ИИ. */
 	let mlLayerManual = $state(false);
@@ -112,7 +121,14 @@
 		}> = [];
 		for (const feature of mlOverlay.features) {
 			const props = (feature.properties ?? {}) as Record<string, unknown>;
-			const id = String(props.id ?? props.detection_id ?? out.length);
+			// detection_id нумеруется заново в каждом скане — по нему одному
+			// маркеры из разных сканов сталкиваются (Svelte падал:
+			// "duplicate key" в {#each}, из-за чего ниже по дереву переставали
+			// перерисовываться и точки рисования ИИ). ml_scan_id делает ключ
+			// глобально уникальным.
+			const id = String(
+				props.id ?? `${props.ml_scan_id ?? 'x'}:${props.detection_id ?? out.length}`
+			);
 			let lon = Number(props.lon);
 			let lat = Number(props.lat);
 			if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
@@ -274,6 +290,100 @@
 			return;
 		}
 		await runMlScan(view.bbox, view.zoom);
+	}
+
+	// ── Sentinel-2: слой NDWI поверх видимой области + автодетекция ──────────
+	let sentinelVisible = $state(false);
+	let sentinelScene = $state<SatelliteScene | null>(null);
+	let sentinelLoading = $state(false);
+	let satelliteScanning = $state(false);
+	let satelliteNote = $state<string | null>(null);
+
+	function viewportCenter(bbox: [number, number, number, number]): [number, number] {
+		const [west, south, east, north] = bbox;
+		return [(west + east) / 2, (south + north) / 2];
+	}
+
+	/** Немного шире видимой области — иначе край viewport'а рискует не попасть
+	 *  в footprint найденной сцены при следующем nearestScene. */
+	function paddedBbox(bbox: [number, number, number, number]): [number, number, number, number] {
+		const [west, south, east, north] = bbox;
+		const padLon = (east - west) * 0.25;
+		const padLat = (north - south) * 0.25;
+		return [west - padLon, south - padLat, east + padLon, north + padLat];
+	}
+
+	/** Сцены под этим участком может не быть вообще (refresh ещё не запускали) —
+	 *  тогда nearestScene отвечает 404. Автоматически подгружаем сцены по
+	 *  видимой области и пробуем ещё раз, вместо того чтобы просто показать
+	 *  ошибку и заставлять сотрудника разбираться с отдельной ручкой refresh. */
+	async function nearestSceneOrRefresh(
+		lat: number,
+		lon: number,
+		bbox: [number, number, number, number]
+	): Promise<SatelliteScene> {
+		try {
+			return await satellite.nearestScene(lat, lon);
+		} catch (cause) {
+			if (!(cause instanceof ApiError) || cause.status !== 404) throw cause;
+			await satellite.refreshScenes({ bbox: paddedBbox(bbox), max_cloud_cover: 40, limit: 10 });
+			return await satellite.nearestScene(lat, lon);
+		}
+	}
+
+	async function toggleSentinelLayer() {
+		if (sentinelVisible) {
+			sentinelVisible = false;
+			return;
+		}
+		if (!mapApi || sentinelLoading) return;
+		const view = mapApi.getMapBounds();
+		if (!view) return;
+		const [lon, lat] = viewportCenter(view.bbox);
+		satelliteNote = null;
+		sentinelLoading = true;
+		try {
+			sentinelScene = await nearestSceneOrRefresh(lat, lon, view.bbox);
+			sentinelVisible = true;
+		} catch (cause) {
+			satelliteNote =
+				cause instanceof ApiError
+					? cause.message
+					: 'Нет сцены Sentinel-2 для этой области (облачно везде или сбой каталога).';
+		} finally {
+			sentinelLoading = false;
+		}
+	}
+
+	async function detectViewportAnomalies() {
+		if (satelliteScanning || !mapApi) return;
+		const view = mapApi.getMapBounds();
+		if (!view) {
+			satelliteNote = 'Карта ещё не готова.';
+			return;
+		}
+		satelliteScanning = true;
+		satelliteNote = null;
+		try {
+			const [lon, lat] = viewportCenter(view.bbox);
+			const scene = sentinelScene ?? (await nearestSceneOrRefresh(lat, lon, view.bbox));
+			sentinelScene = scene;
+			sentinelVisible = true;
+			const result = await satellite.detect({
+				scene_id: scene.id,
+				bbox: view.bbox,
+				index: 'ndwi'
+			});
+			satelliteNote =
+				result.hypotheses_created > 0
+					? `Найдено аномалий: ${result.polygons_found} · в очередь ООПТ: ${result.hypotheses_created}.`
+					: `Аномалий не найдено (проверено полигонов: ${result.polygons_found}).`;
+		} catch (cause) {
+			satelliteNote =
+				cause instanceof ApiError ? cause.message : 'Не удалось выполнить детекцию по спутнику.';
+		} finally {
+			satelliteScanning = false;
+		}
 	}
 
 	function startMlDraw() {
@@ -540,6 +650,8 @@
 		{mlOverlay}
 		{mlVisible}
 		{mlMarkers}
+		{sentinelVisible}
+		{sentinelScene}
 		{focus}
 		{viewEpoch}
 		homeBounds={mapHomeBounds}
@@ -553,35 +665,75 @@
 	style="padding-top: env(safe-area-inset-top)"
 >
 	<div class="flex flex-wrap gap-2">
+		{#if mlConfigured}
+			<button
+				type="button"
+				aria-pressed={mlVisible}
+				onclick={() => (mlLayerManual = !mlLayerManual)}
+				class="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm aria-pressed:border-violet-300 aria-pressed:bg-violet-50 aria-pressed:text-violet-900"
+			>
+				Слой ML
+			</button>
+			{#if isStaff || session.hasMapAccess}
+				<button
+					type="button"
+					disabled={mlScanning || overview || mlDraw}
+					onclick={scanViewport}
+					class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+				>
+					<ScanSearch size={14} />
+					{mlScanning ? '…' : 'Скан'}
+				</button>
+				<button
+					type="button"
+					disabled={mlScanning}
+					onclick={() => (mlDraw ? cancelMlDraw() : startMlDraw())}
+					class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+				>
+					<SquareDashed size={14} />
+					Проверить ИИ
+				</button>
+			{/if}
+		{/if}
 		<button
 			type="button"
-			aria-pressed={mlVisible}
-			onclick={() => (mlLayerManual = !mlLayerManual)}
-			class="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm aria-pressed:border-violet-300 aria-pressed:bg-violet-50 aria-pressed:text-violet-900"
+			aria-pressed={sentinelVisible}
+			disabled={sentinelLoading}
+			onclick={toggleSentinelLayer}
+			class="flex min-h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm disabled:opacity-60 aria-pressed:border-sky-300 aria-pressed:bg-sky-50 aria-pressed:text-sky-900"
 		>
-			Слой ML
+			{#if sentinelLoading}
+				<span class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-sky-600"
+				></span>
+				Загрузка снимка…
+			{:else}
+				Слой Sentinel NDWI
+			{/if}
 		</button>
 		{#if isStaff || session.hasMapAccess}
 			<button
 				type="button"
-				disabled={mlScanning || overview || mlDraw}
-				onclick={scanViewport}
-				class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+				disabled={satelliteScanning || overview}
+				onclick={detectViewportAnomalies}
+				class="flex min-h-9 items-center gap-1.5 rounded-full bg-sky-700 px-3 text-xs font-medium text-white shadow-sm hover:bg-sky-600 disabled:opacity-50"
 			>
-				<ScanSearch size={14} />
-				{mlScanning ? '…' : 'Скан'}
-			</button>
-			<button
-				type="button"
-				disabled={mlScanning}
-				onclick={() => (mlDraw ? cancelMlDraw() : startMlDraw())}
-				class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
-			>
-				<SquareDashed size={14} />
-				Проверить ИИ
+				<Satellite size={14} />
+				{satelliteScanning ? '…' : 'Искать аномалии'}
 			</button>
 		{/if}
 	</div>
+	{#if satelliteNote}
+		<p
+			class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-relaxed text-sky-900 shadow-sm"
+		>
+			{satelliteNote}
+			<button
+				type="button"
+				onclick={() => (satelliteNote = null)}
+				class="ml-1 font-medium underline">Закрыть</button
+			>
+		</p>
+	{/if}
 </div>
 
 {#if mlDraw || mlScanning || mlNote}

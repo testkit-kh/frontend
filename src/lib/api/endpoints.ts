@@ -429,3 +429,78 @@ export const ml = {
 			query: { limit: params.limit, scan_id: params.scan_id }
 		})
 };
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sentinel-2 (STAC + titiler): реальные сцены вместо Esri-заглушки.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type SatelliteScene = {
+	id: string;
+	stac_id: string;
+	collection: string;
+	datetime: string;
+	cloud_cover: number | null;
+	bbox: number[];
+	thumbnail_url: string | null;
+	organization_id: string | null;
+	/** Готовые шаблоны {z}/{x}/{y} — подставляются напрямую в MapLibre raster source. */
+	tile_url_rgb: string;
+	tile_url_ndwi: string;
+	tile_url_ndti: string;
+	created_at: string;
+};
+
+export type SatelliteDetectResult = {
+	scene_id: string;
+	index: 'ndwi' | 'ndti';
+	threshold_used: number;
+	polygons_found: number;
+	hypotheses_created: number;
+	hypothesis_ids: string[];
+};
+
+export const satellite = {
+	refreshScenes: (body: {
+		bbox: [number, number, number, number];
+		since?: string;
+		max_cloud_cover?: number;
+		limit?: number;
+		organization_id?: string;
+	}) => request<{ items: SatelliteScene[] }>('/api/v1/satellite/scenes/refresh', { body }),
+
+	listScenes: (
+		params: {
+			bbox?: [number, number, number, number];
+			lat?: number;
+			lon?: number;
+			radius_m?: number;
+			since?: string;
+			limit?: number;
+		} = {}
+	) =>
+		request<{ items: SatelliteScene[]; total: number }>('/api/v1/satellite/scenes', {
+			query: {
+				min_lon: params.bbox?.[0],
+				min_lat: params.bbox?.[1],
+				max_lon: params.bbox?.[2],
+				max_lat: params.bbox?.[3],
+				lat: params.lat,
+				lon: params.lon,
+				radius_m: params.radius_m,
+				since: params.since,
+				limit: params.limit
+			}
+		}),
+
+	getScene: (id: string) => request<SatelliteScene>(`/api/v1/satellite/scenes/${id}`),
+
+	nearestScene: (lat: number, lon: number, at?: string) =>
+		request<SatelliteScene>('/api/v1/satellite/scenes/nearest', { query: { lat, lon, at } }),
+
+	detect: (body: {
+		scene_id: string;
+		bbox: [number, number, number, number];
+		index: 'ndwi' | 'ndti';
+		threshold?: number;
+	}) => request<SatelliteDetectResult>('/api/v1/satellite/detect', { body })
+};

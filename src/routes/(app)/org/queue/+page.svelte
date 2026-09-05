@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Check, Inbox, Plane, X } from '@lucide/svelte';
 	import { ApiError } from '$lib/api/client';
-	import { hypotheses, type Hypothesis } from '$lib/api/endpoints';
+	import { hypotheses, satellite, type Hypothesis, type SatelliteScene } from '$lib/api/endpoints';
 	import { TRASH_CATEGORY_LABEL } from '$lib/data/trash';
 	import SatelliteView from '$lib/components/SatelliteView.svelte';
 	import StatusPill from '$lib/components/StatusPill.svelte';
@@ -39,6 +39,25 @@
 		if (lastCurrent === id) return;
 		lastCurrent = id;
 		reason = '';
+	});
+
+	// Сцены Sentinel-2 рядом с текущей точкой — для SatelliteView.
+	// Модуль может быть не настроен (503) или сцены под этим участком ещё
+	// нет (нужен refresh на карте) — тогда просто пустой список, без баннера
+	// ошибки: SatelliteView в этом случае покажет базовую карту.
+	let satelliteScenes = $state<SatelliteScene[]>([]);
+	let lastSatelliteId: string | null = null;
+	$effect(() => {
+		const point = current;
+		if (!point || lastSatelliteId === point.id) return;
+		lastSatelliteId = point.id;
+		satelliteScenes = [];
+		satellite
+			.listScenes({ lat: point.lat, lon: point.lon, radius_m: 5000, limit: 8 })
+			.then((res) => {
+				if (lastSatelliteId === point.id) satelliteScenes = res.items;
+			})
+			.catch(() => {});
 	});
 
 	async function decide(status: 'approved' | 'rejected' | 'drone_requested') {
@@ -153,6 +172,7 @@
 								id={current.id}
 								geometry={{ type: 'Point', coordinates: [current.lon, current.lat] }}
 								color="#f59e0b"
+								scenes={satelliteScenes}
 							/>
 						</div>
 					</div>
