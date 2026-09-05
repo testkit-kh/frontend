@@ -65,6 +65,17 @@ function write(userId: string, value: Record_) {
 	}
 }
 
+/** Локальные метаданные драфта не уезжают на API. */
+function toPayload<P extends object>(
+	draft: P & { savedAt: string; sync: SyncState; triedAt?: string }
+): P {
+	const out = { ...draft } as P & { savedAt?: string; sync?: SyncState; triedAt?: string };
+	delete out.savedAt;
+	delete out.sync;
+	delete out.triedAt;
+	return out;
+}
+
 class Onboarding {
 	#userId = $state<string | null>(null);
 	record = $state<Record_>({});
@@ -151,11 +162,9 @@ class Onboarding {
 
 		try {
 			if (what === 'education') {
-				const { savedAt: _s, sync: _y, triedAt: _t, ...payload } = this.record.education!;
-				await api.education(payload);
+				await api.education(toPayload(this.record.education!));
 			} else {
-				const { savedAt: _s, sync: _y, triedAt: _t, ...payload } = this.record.territory!;
-				await api.territory(payload);
+				await api.territory(toPayload(this.record.territory!));
 			}
 			this.#patch({ [what]: { ...tried, sync: 'synced' } } as Partial<Record_>);
 		} catch (error) {

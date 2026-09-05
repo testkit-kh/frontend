@@ -36,7 +36,10 @@ function coreName(value: string): string {
 
 /** `relation/2800189` или `OSM relation/2800189` → `relation/2800189`. */
 function normalizeOsmId(value: string): string | null {
-	const match = value.trim().toLowerCase().match(/\b(relation|way|node)\/\d+\b/);
+	const match = value
+		.trim()
+		.toLowerCase()
+		.match(/\b(relation|way|node)\/\d+\b/);
 	return match ? match[0] : null;
 }
 

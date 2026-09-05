@@ -91,9 +91,7 @@ class OfflineQueue {
 					// загрузки файла — для демо важнее живая точка на карте).
 					const retryable =
 						uploadError instanceof ApiError &&
-						(uploadError.status === 0 ||
-							uploadError.status === 503 ||
-							uploadError.status === 404);
+						(uploadError.status === 0 || uploadError.status === 503 || uploadError.status === 404);
 					if (!retryable) throw uploadError;
 					entry.lastError = `Фото не загрузилось (${uploadError.message}) — точка ушла без него`;
 				}
