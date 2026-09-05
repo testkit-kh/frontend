@@ -1,41 +1,56 @@
 <script lang="ts">
-	import { List, Plus, X } from '@lucide/svelte';
+	import { Plus, X } from '@lucide/svelte';
 	import PollutionMap from '$lib/map/PollutionMap.svelte';
 	import ReportList from '$lib/components/ReportList.svelte';
 	import ReportDetails from '$lib/components/ReportDetails.svelte';
 	import NewReportForm from '$lib/components/NewReportForm.svelte';
 	import MapLegend from '$lib/components/MapLegend.svelte';
 	import TerritoryPicker from '$lib/components/TerritoryPicker.svelte';
+	import BottomSheet from '$lib/components/BottomSheet.svelte';
+	import Logo from '$lib/components/Logo.svelte';
+	import { ALL_TERRITORIES } from '$lib/data/territories';
 	import { reports } from '$lib/state/reports.svelte';
 	import { session } from '$lib/state/session.svelte';
+	import { territoryHealth, overallMood } from '$lib/state/health';
 	import type { ReportKind, ReportStatus } from '$lib/types';
 
 	let { data } = $props();
 
-	const user = $derived(session.user!);
-	const isStaff = $derived(user.role === 'staff');
+	const isStaff = $derived(session.isStaff);
+	const authorName = $derived(session.name);
 
 	let picked = $state<string | null>(null);
+	const activeId = $derived(picked ?? session.organizationId ?? ALL_TERRITORIES);
+	/** null — обзор всей страны. */
 	const territory = $derived(
-		data.territories.find((t) => t.id === (picked ?? user.organizationId)) ?? data.territories[0]
+		activeId === ALL_TERRITORIES ? null : (data.territories.find((t) => t.id === activeId) ?? null)
 	);
+	const overview = $derived(territory === null);
 
 	let selectedId = $state<string | null>(null);
-	let panelOpen = $state(true);
+	let sheetSnap = $state<'peek' | 'half' | 'full'>('half');
 	let drawing = $state(false);
 	let kind = $state<ReportKind>('trash');
 	let draftPoint = $state<[number, number] | null>(null);
 	let draftArea = $state<[number, number][]>([]);
 
+	const visible = $derived(isStaff ? reports.items : reports.visibleTo(authorName));
 	const inTerritory = $derived(
-		(isStaff ? reports.items : reports.visibleTo(user.name)).filter(
-			(r) => r.territoryId === territory.id
-		)
+		overview ? visible : visible.filter((r) => r.territoryId === territory!.id)
 	);
 
 	let filter = $state<'all' | ReportStatus>('all');
 	const shown = $derived(
 		filter === 'all' ? inTerritory : inTerritory.filter((r) => r.status === filter)
+	);
+
+	const health = $derived(
+		overview
+			? {
+					open: inTerritory.filter((r) => r.status !== 'rejected').length,
+					mood: overallMood(visible)
+				}
+			: territoryHealth(visible, territory!.id)
 	);
 
 	const selected = $derived(reports.items.find((r) => r.id === selectedId) ?? null);
@@ -61,8 +76,8 @@
 
 	let lastTerritory = '';
 	$effect(() => {
-		if (lastTerritory === territory.id) return;
-		lastTerritory = territory.id;
+		if (lastTerritory === activeId) return;
+		lastTerritory = activeId;
 		selectedId = null;
 	});
 
@@ -78,7 +93,9 @@
 
 	function startDrawing() {
 		drawing = true;
-		panelOpen = true;
+		// Наполовину, а не целиком: человек ставит точку на карте, и форма не
+		// должна её закрывать.
+		sheetSnap = 'half';
 		selectedId = null;
 	}
 
@@ -90,12 +107,12 @@
 
 	function submit({ title, note }: { title: string; note: string }) {
 		const report = reports.add({
-			territoryId: territory.id,
+			territoryId: territory?.id ?? data.territories[0].id,
 			kind,
 			source: kind === 'trash' ? 'field' : 'satellite',
 			title,
 			note,
-			author: user.name,
+			author: authorName,
 			geometry:
 				kind === 'trash'
 					? { type: 'Point', coordinates: draftPoint! }
@@ -104,6 +121,15 @@
 		cancelDrawing();
 		selectedId = report.id;
 	}
+
+	function selectTerritory(id: string) {
+		picked = id;
+		sheetSnap = 'half';
+	}
+
+	// Рисовать точку в обзоре страны нельзя: непонятно, к какой территории её
+	// отнести, да и попасть пальцем в берег на таком масштабе невозможно.
+	const canDraw = $derived(!isStaff && !overview);
 </script>
 
 <svelte:head><title>Карта · Чистый берег</title></svelte:head>
@@ -119,51 +145,35 @@
 		drawMode={drawing ? (kind === 'trash' ? 'point' : 'area') : 'off'}
 		draft={kind === 'trash' ? (draftPoint ? [draftPoint] : []) : draftArea}
 		onmapclick={mapClick}
+		onterritory={selectTerritory}
 	/>
 </div>
 
-{#if panelOpen}
-	<aside
-		class="absolute inset-y-4 left-4 z-10 flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white"
-		aria-label={drawing ? 'Новая гипотеза' : 'Точки загрязнения'}
-	>
-		{#if drawing}
-			<NewReportForm
-				{kind}
-				{draftPoint}
-				{draftArea}
-				onkind={(next) => {
-					kind = next;
-					draftPoint = null;
-					draftArea = [];
-				}}
-				onundo={undo}
-				oncancel={cancelDrawing}
-				onsubmit={submit}
-			/>
-		{:else}
-			<header class="flex flex-col gap-3 border-b border-slate-200 p-4">
+<BottomSheet bind:snap={sheetSnap} label={drawing ? 'Новая гипотеза' : 'Точки загрязнения'}>
+	{#snippet header()}
+		{#if !drawing}
+			<div class="flex flex-col gap-3 border-b border-slate-200 px-4 pb-4 md:pt-4">
 				<div class="flex items-start gap-3">
+					<Logo mood={health.mood} size={36} />
 					<div class="min-w-0 flex-1">
-						<h1 class="text-base font-semibold text-slate-900">{territory.name}</h1>
-						<p class="mt-1 text-xs text-slate-500">
-							{shown.length} из {inTerritory.length} точек в границах ООПТ
+						<h1 class="truncate text-base font-semibold text-slate-900">
+							{territory?.name ?? 'Вся Россия'}
+						</h1>
+						<p
+							class="mt-0.5 text-xs {health.mood === 'dirty'
+								? 'text-orange-600'
+								: 'text-slate-500'}"
+						>
+							{health.open} точек ждут работы
+							{#if !overview}· {shown.length} из {inTerritory.length} показано{/if}
 						</p>
 					</div>
-					<button
-						type="button"
-						onclick={() => (panelOpen = false)}
-						aria-label="Скрыть список"
-						class="-mt-2 -mr-2 shrink-0 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-					>
-						<X size={16} />
-					</button>
 				</div>
 
 				<TerritoryPicker
 					territories={data.territories}
-					value={territory.id}
-					onchange={(id) => (picked = id)}
+					value={activeId}
+					onchange={selectTerritory}
 					locked={isStaff}
 				/>
 
@@ -173,60 +183,96 @@
 							type="button"
 							aria-pressed={filter === option.value}
 							onclick={() => (filter = option.value)}
-							class="flex-1 rounded-full px-3 py-1.5 text-slate-600 aria-pressed:bg-white aria-pressed:font-medium aria-pressed:text-slate-900"
+							class="min-h-9 flex-1 rounded-full px-3 text-slate-600 aria-pressed:bg-white aria-pressed:font-medium aria-pressed:text-slate-900"
 						>
 							{option.label}
 						</button>
 					{/each}
 				</div>
-			</header>
-
-			<ReportList
-				items={shown}
-				{selectedId}
-				onselect={(id) => (selectedId = id)}
-				empty="В этом фильтре точек нет."
-			/>
-
-			{#if !isStaff}
-				<div class="mt-auto border-t border-slate-200 p-4">
-					<button
-						type="button"
-						onclick={startDrawing}
-						class="flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-					>
-						<Plus size={16} /> Сообщить о загрязнении
-					</button>
-				</div>
-			{/if}
+			</div>
 		{/if}
-	</aside>
-{:else}
-	<button
-		type="button"
-		onclick={() => (panelOpen = true)}
-		class="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-	>
-		<List size={16} /> Точки
-	</button>
-{/if}
+	{/snippet}
 
-<div class="pointer-events-none absolute inset-x-4 bottom-4 z-0 flex justify-center">
-	<div class="pointer-events-auto hidden md:block">
+	{#if drawing}
+		<NewReportForm
+			{kind}
+			{draftPoint}
+			{draftArea}
+			onkind={(next) => {
+				kind = next;
+				draftPoint = null;
+				draftArea = [];
+			}}
+			onundo={undo}
+			oncancel={cancelDrawing}
+			onsubmit={submit}
+		/>
+	{:else if overview}
+		<p class="px-4 py-6 text-sm text-slate-500">
+			Показаны все {data.territories.length} территорий проекта. Нажмите метку на карте или выберите территорию,
+			чтобы увидеть точки.
+		</p>
+	{:else}
+		<ReportList
+			items={shown}
+			{selectedId}
+			onselect={(id) => {
+				selectedId = id;
+				sheetSnap = 'peek';
+			}}
+			empty="В этом фильтре точек нет."
+		/>
+	{/if}
+
+	{#snippet footer()}
+		{#if canDraw && !drawing}
+			<div class="p-4">
+				<button
+					type="button"
+					onclick={startDrawing}
+					class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-700"
+				>
+					<Plus size={16} /> Сообщить о загрязнении
+				</button>
+			</div>
+		{/if}
+	{/snippet}
+</BottomSheet>
+
+<!-- Легенда только на широком экране: на телефоне её место занимает лист. -->
+<div class="pointer-events-none absolute inset-x-4 bottom-4 z-0 hidden justify-center md:flex">
+	<div class="pointer-events-auto">
 		<MapLegend statuses={legend} />
 	</div>
 </div>
 
 {#if selected}
+	<!-- Карточка точки перекрывает лист: на телефоне это единственный способ
+	     показать подробности, не отнимая у карты остаток экрана. -->
 	<div
-		class="absolute inset-x-4 bottom-4 z-10 max-h-[70%] md:inset-x-auto md:top-4 md:right-4 md:bottom-4 md:w-96"
+		class="absolute inset-x-0 bottom-0 z-20 max-h-[80dvh] md:inset-x-auto md:top-4 md:right-4 md:bottom-4 md:w-96"
+		style="padding-bottom: env(safe-area-inset-bottom)"
 	>
 		<ReportDetails
 			report={selected}
-			role={user.role}
+			role={isStaff ? 'staff' : 'volunteer'}
 			{routeShown}
 			ontoggleroute={() => (routeShown = !routeShown)}
-			onclose={() => (selectedId = null)}
+			onclose={() => {
+				selectedId = null;
+				sheetSnap = 'half';
+			}}
 		/>
 	</div>
+{/if}
+
+{#if drawing}
+	<button
+		type="button"
+		onclick={cancelDrawing}
+		aria-label="Отменить"
+		class="absolute top-4 right-4 z-20 flex min-h-11 min-w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 md:hidden"
+	>
+		<X size={18} />
+	</button>
 {/if}

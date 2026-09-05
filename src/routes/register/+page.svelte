@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { CircleAlert, Info } from '@lucide/svelte';
+	import { CircleAlert, CircleCheck, Info, Loader2, TriangleAlert } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { ApiError } from '$lib/api/client';
+	import { registry, type CompanyInfo } from '$lib/api/endpoints';
 	import AuthShell from '$lib/components/AuthShell.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 	import RolePicker from '$lib/components/RolePicker.svelte';
 	import { session } from '$lib/state/session.svelte';
-	import { validateCadastral, validateInn } from '$lib/registry';
+	import { validateInn } from '$lib/registry';
 	import type { Role } from '$lib/types';
 
 	let role = $state<Role>('volunteer');
@@ -13,12 +16,11 @@
 	let email = $state('');
 	let password = $state('');
 	let birth = $state('');
-
 	let org = $state('');
 	let inn = $state('');
-	let cadastral = $state('');
 
-	const AGE_LIMIT = 14;
+	const MIN_AGE = 14;
+	const ADULT_AGE = 18;
 
 	const age = $derived.by(() => {
 		if (!birth) return null;
@@ -33,23 +35,86 @@
 		return years;
 	});
 
-	const tooYoung = $derived(age !== null && age < AGE_LIMIT);
-
+	const tooYoung = $derived(age !== null && age < MIN_AGE);
+	const needsConsent = $derived(age !== null && age >= MIN_AGE && age < ADULT_AGE);
 	const innValid = $derived(inn.trim() === '' || validateInn(inn));
-	const cadastralValid = $derived(cadastral.trim() === '' || validateCadastral(cadastral));
 
-	const base = $derived(name.trim().length > 1 && email.includes('@') && password.length >= 6);
+	// ── Автозаполнение по ИНН ────────────────────────────────────────────
+	// Ходим в ЕГРЮЛ, когда контрольная сумма сошлась: гонять запрос на каждое
+	// нажатие клавиши бессмысленно, а битый ИНН реестр всё равно не найдёт.
+	let company = $state<CompanyInfo | null>(null);
+	let lookingUp = $state(false);
+	let lookupNote = $state<string | null>(null);
+	let controller: AbortController | null = null;
+
+	async function lookupCompany(value: string) {
+		controller?.abort();
+		company = null;
+		lookupNote = null;
+		if (!validateInn(value)) return;
+
+		controller = new AbortController();
+		lookingUp = true;
+		try {
+			company = await registry.company(value.replace(/\D/g, ''), controller.signal);
+			org = company.short_name ?? company.name;
+			if (!company.is_active) {
+				lookupNote = 'По данным ЕГРЮЛ организация недействующая — заявку проверит модератор.';
+			}
+		} catch (error) {
+			if (error instanceof ApiError) {
+				// Реестр недоступен — это не повод не пустить человека: бэкенд
+				// в таком случае отправит заявку на ручную проверку.
+				lookupNote = error.isUnavailable
+					? 'Реестр сейчас недоступен — заполните название вручную.'
+					: error.message;
+			}
+		} finally {
+			lookingUp = false;
+		}
+	}
+
+	let lastInn = '';
+	$effect(() => {
+		const value = inn.trim();
+		if (value === lastInn) return;
+		lastInn = value;
+		lookupCompany(value);
+	});
+
 	const ready = $derived(
-		base &&
+		name.trim().length > 1 &&
+			email.includes('@') &&
+			password.length >= 8 &&
 			(role === 'volunteer'
 				? Boolean(birth) && !tooYoung
-				: org.trim().length > 1 && validateInn(inn) && validateCadastral(cadastral))
+				: org.trim().length > 1 && validateInn(inn))
 	);
 
-	function submit(event: SubmitEvent) {
+	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!ready) return;
-		session.register(name, email.trim(), role);
+		if (!ready || session.busy) return;
+
+		const success =
+			role === 'volunteer'
+				? await session.registerVolunteer({
+						email: email.trim(),
+						password,
+						full_name: name.trim(),
+						birth_date: birth,
+						is_over_14: true,
+						source: 'direct'
+					})
+				: await session.registerOrganization({
+						org_name: org.trim(),
+						inn: inn.replace(/\D/g, ''),
+						email: email.trim(),
+						password,
+						full_name: name.trim()
+					});
+
+		if (!success) return;
+		// Следующий шаг решает гвард в layout: согласие, обучение или карта.
 		goto(resolve('/map'));
 	}
 </script>
@@ -57,9 +122,12 @@
 <svelte:head><title>Регистрация · Чистый берег</title></svelte:head>
 
 <AuthShell>
-	<div>
-		<h1 class="text-2xl font-semibold text-slate-900">Регистрация</h1>
-		<p class="mt-1 text-sm text-slate-500">Займёт минуту. Обучение — следующим шагом.</p>
+	<div class="flex items-center gap-3">
+		<Logo size={44} />
+		<div>
+			<h1 class="text-2xl font-semibold text-slate-900">Регистрация</h1>
+			<p class="mt-0.5 text-sm text-slate-500">Займёт минуту. Обучение — следующим шагом.</p>
+		</div>
 	</div>
 
 	<form class="flex flex-col gap-4" onsubmit={submit}>
@@ -71,7 +139,7 @@
 				bind:value={name}
 				required
 				placeholder="Иванова Мария"
-				class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				class="min-h-12 rounded-lg border border-slate-300 px-3 text-sm text-slate-900"
 			/>
 		</label>
 
@@ -83,7 +151,7 @@
 				required
 				autocomplete="email"
 				placeholder="mail@example.ru"
-				class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				class="min-h-12 rounded-lg border border-slate-300 px-3 text-sm text-slate-900"
 			/>
 		</label>
 
@@ -94,9 +162,9 @@
 				type="password"
 				required
 				autocomplete="new-password"
-				class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				class="min-h-12 rounded-lg border border-slate-300 px-3 text-sm text-slate-900"
 			/>
-			<span class="text-slate-400">От 6 символов.</span>
+			<span class="text-slate-400">От 8 символов.</span>
 		</label>
 
 		{#if role === 'volunteer'}
@@ -106,36 +174,34 @@
 					bind:value={birth}
 					type="date"
 					required
-					class="rounded-lg border px-3 py-2 text-sm text-slate-900 {tooYoung
+					class="min-h-12 rounded-lg border px-3 text-sm text-slate-900 {tooYoung
 						? 'border-amber-300'
 						: 'border-slate-300'}"
 				/>
 				{#if tooYoung}
-					<span class="flex items-center gap-1.5 text-amber-700">
-						<CircleAlert size={13} /> Самостоятельное участие с {AGE_LIMIT} лет. Напишите нам — подберём
-						формат со школой.
+					<span class="flex items-start gap-1.5 text-amber-700">
+						<CircleAlert size={13} class="mt-0.5 shrink-0" />
+						Самостоятельное участие с {MIN_AGE} лет. Напишите нам — подберём формат со школой.
+					</span>
+				{:else if needsConsent}
+					<!-- Говорим об этом до отправки формы, а не после: человек должен
+					     понимать, что его ждёт, и что курс при этом уже открыт. -->
+					<span class="flex items-start gap-1.5 text-slate-500">
+						<Info size={13} class="mt-0.5 shrink-0" />
+						До 18 лет понадобится согласие родителя — попросим его на следующем шаге. Обучение доступно
+						сразу.
 					</span>
 				{/if}
 			</label>
 		{:else}
 			<label class="flex flex-col gap-1 text-xs text-slate-500">
-				Название организации
-				<input
-					bind:value={org}
-					required
-					placeholder="Кроноцкий заповедник"
-					class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
-				/>
-			</label>
-
-			<label class="flex flex-col gap-1 text-xs text-slate-500">
-				ИНН
+				ИНН организации
 				<input
 					bind:value={inn}
 					inputmode="numeric"
 					required
-					placeholder="7707083893"
-					class="rounded-lg border px-3 py-2 text-sm text-slate-900 {innValid
+					placeholder="4101124158"
+					class="min-h-12 rounded-lg border px-3 text-sm text-slate-900 {innValid
 						? 'border-slate-300'
 						: 'border-amber-300'}"
 				/>
@@ -143,43 +209,51 @@
 					<span class="flex items-center gap-1.5 text-amber-700">
 						<CircleAlert size={13} /> Контрольная сумма не сходится — проверьте цифры.
 					</span>
+				{:else if lookingUp}
+					<span class="flex items-center gap-1.5 text-slate-400">
+						<Loader2 size={13} class="animate-spin" /> Ищем в ЕГРЮЛ…
+					</span>
+				{:else if company}
+					<span class="flex items-start gap-1.5 text-emerald-700">
+						<CircleCheck size={13} class="mt-0.5 shrink-0" />
+						{company.name}{company.ogrn ? ` · ОГРН ${company.ogrn}` : ''}
+					</span>
 				{/if}
-			</label>
-
-			<label class="flex flex-col gap-1 text-xs text-slate-500">
-				Кадастровый номер территории
-				<input
-					bind:value={cadastral}
-					required
-					placeholder="41:01:0000000:1"
-					class="rounded-lg border px-3 py-2 text-sm text-slate-900 {cadastralValid
-						? 'border-slate-300'
-						: 'border-amber-300'}"
-				/>
-				{#if !cadastralValid}
-					<span class="flex items-center gap-1.5 text-amber-700">
-						<CircleAlert size={13} /> Формат: 41:01:0000000:1
+				{#if lookupNote}
+					<span class="flex items-start gap-1.5 text-amber-700">
+						<TriangleAlert size={13} class="mt-0.5 shrink-0" />{lookupNote}
 					</span>
 				{/if}
 			</label>
 
-			<div
-				class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600"
-			>
-				<Info size={16} class="mt-0.5 shrink-0 text-slate-400" />
-				<p>
-					Реквизиты проверит система, границы территории построим по кадастровому номеру. Если
-					автоматика не сработает, заявку посмотрит модератор — до этого предложка будет пустой.
-				</p>
+			<label class="flex flex-col gap-1 text-xs text-slate-500">
+				Название организации
+				<input
+					bind:value={org}
+					required
+					placeholder="Кроноцкий заповедник"
+					class="min-h-12 rounded-lg border border-slate-300 px-3 text-sm text-slate-900"
+				/>
+				<span class="text-slate-400">
+					Подставляется из реестра, можно поправить. Кадастровые участки территории добавите в
+					профиле организации.
+				</span>
+			</label>
+		{/if}
+
+		{#if session.error}
+			<div class="flex items-start gap-2 text-xs text-red-700">
+				<TriangleAlert size={14} class="mt-0.5 shrink-0" />
+				<span>{session.error}</span>
 			</div>
 		{/if}
 
 		<button
 			type="submit"
-			disabled={!ready}
-			class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
+			disabled={!ready || session.busy}
+			class="min-h-12 rounded-full bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
 		>
-			Создать аккаунт
+			{session.busy ? 'Создаём…' : 'Создать аккаунт'}
 		</button>
 	</form>
 

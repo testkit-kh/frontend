@@ -1,5 +1,13 @@
 import type { LngLatBoundsLike } from 'maplibre-gl';
 
+/**
+ * Значение «вся страна» для выбора территории.
+ *
+ * Строка, а не `null`: значение проходит через <select>, который умеет только
+ * строки. Префикс с подчёркиваниями исключает совпадение с настоящим id ООПТ.
+ */
+export const ALL_TERRITORIES = '__all__';
+
 export type Territory = {
 	id: string;
 	name: string;

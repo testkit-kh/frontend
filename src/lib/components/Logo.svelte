@@ -84,24 +84,9 @@
 		/>
 	{:else}
 		<!-- Хмурые волны: те же линии, но опущенные -->
-		<path
-			d="M30 34c6 6 10 10 14 16"
-			stroke={CREAM}
-			stroke-width="7"
-			stroke-linecap="round"
-		/>
-		<path
-			d="M62 32c-4 8-6 14-6 20"
-			stroke={CREAM}
-			stroke-width="7"
-			stroke-linecap="round"
-		/>
-		<path
-			d="M40 58c10-6 22-6 34 2"
-			stroke={CREAM}
-			stroke-width="7"
-			stroke-linecap="round"
-		/>
+		<path d="M30 34c6 6 10 10 14 16" stroke={CREAM} stroke-width="7" stroke-linecap="round" />
+		<path d="M62 32c-4 8-6 14-6 20" stroke={CREAM} stroke-width="7" stroke-linecap="round" />
+		<path d="M40 58c10-6 22-6 34 2" stroke={CREAM} stroke-width="7" stroke-linecap="round" />
 		<!-- Туча -->
 		<path
 			d="M96 4c14 0 24 9 24 20 6 0 10 5 10 11s-4 11-10 11H88c-8 0-14-6-14-13 0-6 4-11 10-12-1-10 6-17 12-17Z"

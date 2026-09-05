@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Marker } from 'svelte-maplibre';
 	import Logo from '$lib/components/Logo.svelte';
-	import type { Mood } from '$lib/state/health.ts';
+	import type { Mood } from '$lib/state/health';
 
 	let {
 		coordinates,

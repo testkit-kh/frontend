@@ -1,4 +1,5 @@
 import type { Report } from '$lib/types';
+import type { Mood, TerritoryHealth } from '$lib/state/health';
 
 export function toAreas(items: Report[]) {
 	return {
@@ -31,7 +32,7 @@ export function centroid(report: Report): [number, number] {
  */
 export function territoryPins(
 	territories: { id: string; name: string; bounds: unknown }[],
-	health: Map<string, { open: number; total: number; mood: string }>
+	health: Map<string, TerritoryHealth>
 ) {
 	return {
 		type: 'FeatureCollection' as const,
@@ -48,7 +49,7 @@ export function territoryPins(
 					name: territory.name,
 					open: state?.open ?? 0,
 					total: state?.total ?? 0,
-					mood: state?.mood ?? 'clean'
+					mood: (state?.mood ?? 'clean') as Mood
 				},
 				geometry: {
 					type: 'Point' as const,

@@ -6,6 +6,18 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
 	optimizeDeps: { exclude: ['maplibre-gl'] },
+	server: {
+		// Прокси в разработке: фронт и бэк на разных портах, и без него каждый
+		// запрос тащил бы за собой preflight. В проде тот же путь заворачивает
+		// Caddy, поэтому код клиента одинаков и там, и там.
+		proxy: {
+			'/api-proxy': {
+				target: process.env.VITE_API_TARGET ?? 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-proxy/, '')
+			}
+		}
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({

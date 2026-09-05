@@ -11,10 +11,8 @@
 
 	let { data } = $props();
 
-	const user = $derived(session.user!);
-
 	const territory = $derived(
-		data.territories.find((t) => t.id === user.organizationId) ?? data.territories[0]
+		data.territories.find((t) => t.id === session.organizationId) ?? data.territories[0]
 	);
 
 	let selectedId = $state<string | null>(null);
@@ -127,7 +125,7 @@
 					</button>
 				</div>
 
-				{#if user.role !== 'staff'}
+				{#if !session.isStaff}
 					<p class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
 						Вы вошли волонтёром: в бою этот экран доступен только сотрудникам ООПТ. Здесь он открыт,
 						чтобы оба контура можно было посмотреть с одной учётной записи.

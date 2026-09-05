@@ -29,7 +29,8 @@
 		route = null,
 		drawMode = 'off',
 		draft = [],
-		onmapclick
+		onmapclick,
+		onterritory
 	}: {
 		items: Report[];
 		territories: Territory[];

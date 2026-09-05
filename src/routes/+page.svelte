@@ -4,8 +4,12 @@
 	import { session } from '$lib/state/session.svelte';
 
 	$effect(() => {
+		session.restore();
+	});
+
+	$effect(() => {
 		if (!session.ready) return;
-		goto(resolve(session.user ? '/map' : '/login'), { replaceState: true });
+		goto(resolve(session.profile ? '/map' : '/login'), { replaceState: true });
 	});
 </script>
 
