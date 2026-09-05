@@ -136,7 +136,7 @@
 					<li>
 						<!-- Для остальных уведомлений адрес — action_url с сервера, а не
 						     известный на этапе сборки роут: resolve() к нему неприменим. -->
-						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+						<!-- eslint-disable svelte/no-navigation-without-resolve -->
 						<a
 							href={linkFor(notification)}
 							onclick={(event) => open(notification, event)}
@@ -161,6 +161,7 @@
 								</p>
 							</div>
 						</a>
+						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					</li>
 				{/each}
 			</ul>
