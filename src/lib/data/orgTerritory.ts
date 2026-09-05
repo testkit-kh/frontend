@@ -194,7 +194,9 @@ export function boundsFromParcels(
 	};
 
 	for (const feature of collection.features) {
-		if (feature.geometry) walk(feature.geometry.coordinates);
+		const geom = feature.geometry;
+		if (!geom || geom.type === 'GeometryCollection') continue;
+		walk(geom.coordinates);
 	}
 
 	if (!Number.isFinite(minLon) || !Number.isFinite(maxLon)) return null;

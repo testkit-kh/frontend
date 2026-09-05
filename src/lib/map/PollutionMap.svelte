@@ -45,6 +45,7 @@
 		mlOverlay = { type: 'FeatureCollection', features: [] },
 		mlVisible = true,
 		onmlselect,
+		// eslint-disable-next-line no-useless-assignment -- $bindable нужен родителю с первого кадра
 		mapApi = $bindable(null),
 		/** Точка из URL (?lat=&lon=) — один раз, потом родитель чистит. */
 		focus = null as { lat: number; lon: number } | null,

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Plus, ScanSearch, SquareDashed, X } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { ApiError } from '$lib/api/client';
 	import { hypotheses, ml } from '$lib/api/endpoints';
@@ -496,7 +497,10 @@
 		const next = new URL(page.url);
 		next.searchParams.delete('lat');
 		next.searchParams.delete('lon');
-		void goto(`${next.pathname}${next.search}${next.hash}`, {
+		const query = next.searchParams.toString();
+		/* Путь уже /map — resolve обязателен для base path в деплое. */
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query string после resolve('/map')
+		void goto(`${resolve('/map')}${query ? `?${query}` : ''}`, {
 			replaceState: true,
 			keepFocus: true,
 			noScroll: true
