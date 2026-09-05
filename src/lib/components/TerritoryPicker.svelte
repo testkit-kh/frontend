@@ -6,17 +6,23 @@
 		territories,
 		value,
 		onchange,
-		locked = false
+		locked = false,
+		myTerritoryId = null
 	}: {
 		territories: Territory[];
 		value: string;
 		onchange: (id: string) => void;
 		/** Сотрудник ООПТ привязан к своей территории и списка не выбирает. */
 		locked?: boolean;
+		/** Слаг «моей» ООПТ (не UUID организации). null = матча нет. */
+		myTerritoryId?: string | null;
 	} = $props();
 
 	const current = $derived(territories.find((t) => t.id === value) ?? null);
 	const overview = $derived(value === ALL_TERRITORIES);
+	/** Только явный матч — без фолбэка на territories[0] (всегда был Kronotsky). */
+	const hasHome = $derived(Boolean(myTerritoryId));
+	const onMyTerritory = $derived(hasHome && value === myTerritoryId);
 
 	// Список длинный (19 ООПТ) — группируем по региону, иначе в нём не найти
 	// нужную территорию глазами.
@@ -29,6 +35,11 @@
 		}
 		return groups.sort(([a], [b]) => a.localeCompare(b, 'ru'));
 	});
+
+	function pickHome() {
+		// Нет матча → обзор страны, а не первая ООПТ из списка.
+		onchange(myTerritoryId ?? ALL_TERRITORIES);
+	}
 </script>
 
 {#if locked}
@@ -37,8 +48,11 @@
 	<div class="flex gap-1 rounded-full bg-slate-100 p-1 text-xs">
 		<button
 			type="button"
-			aria-pressed={!overview}
-			onclick={() => onchange(territories[0]?.id ?? '')}
+			aria-pressed={onMyTerritory}
+			title={hasHome
+				? undefined
+				: 'Организация не сопоставлена с ООПТ на карте — показан обзор страны'}
+			onclick={pickHome}
 			class="min-h-9 flex-1 truncate rounded-full px-3 text-slate-600 aria-pressed:bg-white aria-pressed:font-medium aria-pressed:text-slate-900"
 		>
 			Моя территория

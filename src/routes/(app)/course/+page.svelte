@@ -14,6 +14,7 @@
 	import { ApiError } from '$lib/api/client';
 	import { certificates, type CertificateInfo } from '$lib/api/certificates';
 	import { course, type CourseStatus } from '$lib/api/endpoints';
+	import { uploads } from '$lib/api/uploads';
 	import Logo from '$lib/components/Logo.svelte';
 	import { session } from '$lib/state/session.svelte';
 
@@ -32,6 +33,7 @@
 	let error = $state<string | null>(null);
 
 	let certificateUrl = $state('');
+	let certificateFile = $state<File | null>(null);
 	let submitting = $state(false);
 	let submitError = $state<string | null>(null);
 
@@ -99,15 +101,29 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!certificateUrl.trim() || submitting) return;
+		if (submitting) return;
+		if (!certificateUrl.trim() && !certificateFile) return;
 
 		submitting = true;
 		submitError = null;
 		try {
-			await course.submitCertificate(certificateUrl.trim());
+			let url = certificateUrl.trim();
+			if (certificateFile) {
+				try {
+					url = await uploads.putFile(certificateFile, 'certificate');
+				} catch (cause) {
+					if (cause instanceof ApiError && (cause.status === 404 || cause.status === 501)) {
+						throw new ApiError(
+							cause.status,
+							'Загрузка файла пока недоступна — пришлите публичную ссылку на сертификат.'
+						);
+					}
+					throw cause;
+				}
+			}
+			await course.submitCertificate(url);
 			certificateUrl = '';
-			// Профиль перечитываем: от статуса сертификата зависит доступ к карте,
-			// и гвард в layout должен узнать о нём сразу.
+			certificateFile = null;
 			await Promise.all([load(), session.refresh()]);
 		} catch (cause) {
 			submitError = cause instanceof ApiError ? cause.message : 'Не удалось отправить';
@@ -256,12 +272,24 @@
 						<input
 							bind:value={certificateUrl}
 							type="url"
-							required
 							placeholder="https://zaprirodu.ispring.ru/..."
 							class="min-h-12 rounded-lg border border-slate-300 px-3 text-sm text-slate-900"
 						/>
 						<span class="text-slate-400">
-							Публичная ссылка со страницы курса. Загрузка файла появится позже.
+							Публичная ссылка со страницы курса. Можно вместо файла.
+						</span>
+					</label>
+
+					<label class="flex flex-col gap-1 text-xs text-slate-500">
+						Или файл (pdf / изображение)
+						<input
+							type="file"
+							accept="application/pdf,image/*"
+							onchange={(event) => (certificateFile = event.currentTarget.files?.[0] ?? null)}
+							class="text-xs text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700"
+						/>
+						<span class="text-slate-400">
+							Нужна ручка загрузки на бэке; пока её нет — отправьте ссылку.
 						</span>
 					</label>
 
@@ -271,7 +299,7 @@
 
 					<button
 						type="submit"
-						disabled={submitting || !certificateUrl.trim()}
+						disabled={submitting || (!certificateUrl.trim() && !certificateFile)}
 						class="min-h-12 rounded-full border border-slate-300 px-5 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:text-slate-400"
 					>
 						{submitting ? 'Отправляем…' : 'Отправить на проверку'}

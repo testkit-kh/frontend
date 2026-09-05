@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ApiError, loadToken, setToken, setUnauthorizedHandler } from '$lib/api/client';
+import { ApiError, refreshAccess, setToken, setUnauthorizedHandler } from '$lib/api/client';
 import {
 	auth,
 	isCoordinatorProfile,
@@ -13,20 +13,13 @@ import type { Role } from '$lib/types';
 /**
  * Сессия пользователя.
  *
- * Раньше здесь был мок: `crypto.randomUUID()` и `onboarded: true` без всякого
- * сервера. Теперь профиль приходит из `/auth/me`, а вместе с ним — состояние
- * обучения и согласия, от которых зависит доступ к карте.
- *
- * Профиль хранится целиком, а не разбирается на флаги: правила доступа живут
- * на бэкенде и меняются там, а фронт лишь показывает то, что ему ответили.
- * Дублировать логику «пускать или нет» на клиенте — верный способ получить два
- * расходящихся набора правил.
+ * Access-токен только в памяти; между перезагрузками поднимаемся через
+ * httpOnly refresh-куку (`/auth/refresh`). localStorage для JWT больше не
+ * используем — это и был долг P1-7.
  */
 class Session {
 	profile = $state<Profile | null>(null);
-	/** Пока false, гварды ничего не решают: мы ещё не знаем, кто перед нами. */
 	ready = $state(false);
-	/** Идёт вход или регистрация — форма блокирует повторную отправку. */
 	busy = $state(false);
 	error = $state<string | null>(null);
 
@@ -50,21 +43,28 @@ class Session {
 		return this.profile?.full_name ?? '';
 	}
 
-	/** Куда вести после входа — у каждой роли свой раздел приложения. */
 	get landingPath(): '/map' | '/org' | '/admin' {
 		if (this.role === 'staff') return '/org';
 		if (this.role === 'coordinator') return '/admin';
 		return '/map';
 	}
 
-	/** Организация сотрудника — по ней фильтруется карта и предложка. */
 	get organizationId(): string | null {
 		if (this.profile && isStaffProfile(this.profile)) return this.profile.organization.id;
 		return null;
 	}
 
-	/** Карта открыта только после проверенного сертификата. Координатору
-	 *  карта не нужна вовсе — у него свой раздел, `/admin`. */
+	get organizationName(): string | null {
+		if (this.profile && isStaffProfile(this.profile)) return this.profile.organization.name;
+		return null;
+	}
+
+	/** Организация staff из `/auth/me` (имя, territory_osm_id, has_territory). */
+	get organization(): Schemas['OrganizationOut'] | null {
+		if (this.profile && isStaffProfile(this.profile)) return this.profile.organization;
+		return null;
+	}
+
 	get hasMapAccess(): boolean {
 		if (!this.profile) return false;
 		if (isStaffProfile(this.profile)) return true;
@@ -72,7 +72,6 @@ class Session {
 		return false;
 	}
 
-	/** Нужен документ от родителя: до 18 лет и согласие ещё не подтверждено. */
 	get needsConsent(): boolean {
 		return (
 			this.profile !== null &&
@@ -90,31 +89,27 @@ class Session {
 
 	constructor() {
 		if (!browser) return;
-		// Протухший токен разлогинивает молча: показывать «ошибка 401» человеку,
-		// который просто давно не заходил, незачем.
 		setUnauthorizedHandler(() => this.#clear());
 	}
 
-	/** Восстановить сессию по сохранённому токену. Вызывается один раз в layout. */
+	/** Восстановить сессию по refresh-куке. */
 	async restore(): Promise<void> {
 		if (this.ready) return;
-		if (!loadToken()) {
-			this.ready = true;
-			return;
-		}
 		try {
+			const ok = await refreshAccess();
+			if (!ok) {
+				this.ready = true;
+				return;
+			}
 			this.profile = await auth.me();
 		} catch {
-			// Токен не подошёл — начинаем с чистого листа, без сообщений.
 			this.#clear();
 		} finally {
 			this.ready = true;
 		}
 	}
 
-	/** Перечитать профиль: статусы курса и согласия меняются на бэкенде. */
 	async refresh(): Promise<void> {
-		if (!loadToken()) return;
 		try {
 			this.profile = await auth.me();
 		} catch (error) {
@@ -133,8 +128,6 @@ class Session {
 	async registerVolunteer(body: Schemas['VolunteerRegisterRequest']): Promise<boolean> {
 		return this.#attempt(async () => {
 			await auth.registerVolunteer(body);
-			// Регистрация не выдаёт токен — входим тем же паролем сразу, чтобы
-			// человек не заполнял форму входа следом за формой регистрации.
 			const { access_token } = await auth.login(body.email, body.password);
 			setToken(access_token);
 			this.profile = await auth.me();
@@ -151,6 +144,7 @@ class Session {
 	}
 
 	logout() {
+		void auth.logout().catch(() => {});
 		this.#clear();
 	}
 

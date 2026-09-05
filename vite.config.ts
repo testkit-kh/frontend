@@ -51,6 +51,7 @@ export default defineConfig({
 				]
 			},
 			workbox: {
+				importScripts: ['/sw-sync.js'],
 				globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
 				runtimeCaching: [
 					{

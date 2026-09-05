@@ -7,8 +7,15 @@
 	let {
 		report,
 		selected = false,
-		onselect
-	}: { report: Report; selected?: boolean; onselect: (id: string) => void } = $props();
+		onselect,
+		interactive = true
+	}: {
+		report: Report;
+		selected?: boolean;
+		onselect: (id: string) => void;
+		/** В режиме рисования маркеры не перехватывают клик по карте. */
+		interactive?: boolean;
+	} = $props();
 
 	const color = $derived(STATUS_COLOR[report.status]);
 	const Icon = $derived(report.kind === 'spill' ? Waves : MapPin);
@@ -17,10 +24,12 @@
 <Marker
 	lngLat={centroid(report)}
 	anchor="center"
-	asButton
+	asButton={interactive}
 	zIndex={selected ? 2 : 1}
-	onclick={() => onselect(report.id)}
-	class="cursor-pointer"
+	onclick={() => {
+		if (interactive) onselect(report.id);
+	}}
+	class={interactive ? 'cursor-pointer' : 'pointer-events-none'}
 >
 	<span
 		class="relative flex items-center justify-center rounded-full border-2 border-white text-white transition-transform duration-150 ease-out hover:scale-110 {selected

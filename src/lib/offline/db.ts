@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { TrashDetails } from '$lib/data/trash';
 
 /**
  * Очередь несинхронизированных точек. Отдельная база, а не localStorage:
@@ -18,6 +19,8 @@ export type QueuePayload = {
 	title: string;
 	territoryId: string;
 	authorName: string;
+	/** Состав/объём — уходит в `HypothesisCreateRequest.trash`. */
+	trash?: TrashDetails;
 };
 
 export type QueueEntry = {

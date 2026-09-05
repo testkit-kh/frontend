@@ -30,10 +30,11 @@
 	});
 </script>
 
-<div class="overflow-hidden rounded-lg border border-slate-200">
+<!-- Без h-full MapLibre схлопывается: canvas absolute, контролы не держат высоту. -->
+<div class="relative h-full w-full overflow-hidden rounded-lg border border-slate-200">
 	{#key id}
 		<MapLibre
-			class="h-full w-full"
+			class="absolute inset-0 h-full w-full"
 			style={MAP_STYLE}
 			{bounds}
 			fitBoundsOptions={{ padding: 24, animate: false }}

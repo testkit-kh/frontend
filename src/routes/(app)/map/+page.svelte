@@ -11,6 +11,9 @@
 	import BottomSheet from '$lib/components/BottomSheet.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import { ALL_TERRITORIES } from '$lib/data/territories';
+	import { resolveStaffTerritorySlug } from '$lib/data/orgTerritory';
+	import type { TrashDetails } from '$lib/data/trash';
+	import { hypothesisToReport, mapLayersToReports } from '$lib/map/adapters';
 	import { reports } from '$lib/state/reports.svelte';
 	import { session } from '$lib/state/session.svelte';
 	import { territoryHealth, overallMood } from '$lib/state/health';
@@ -20,6 +23,11 @@
 
 	const isStaff = $derived(session.isStaff);
 	const authorName = $derived(session.name);
+	/** null = организация не сопоставлена с ООПТ на карте — остаёмся в обзоре. */
+	const myTerritorySlug = $derived(
+		isStaff ? resolveStaffTerritorySlug(session.organization, data.territories) : null
+	);
+	const territoryMismatch = $derived(isStaff && myTerritorySlug === null);
 
 	// Слой «кому принадлежит» — дополняющий, не критичный путь: пустой список
 	// при сбое не портит карту, поэтому ошибка проглатывается молча.
@@ -31,8 +39,47 @@
 			.catch(() => {});
 	});
 
+	/**
+	 * Настоящие точки с бэкенда.
+	 *
+	 * Своими (`/hypotheses/my`) карта обязана: без них человек отправляет
+	 * наблюдение и после перезагрузки его не находит — самый обидный способ
+	 * потерять волонтёра. Подтверждённые чужие берутся из `/map/layers`: это
+	 * общая картина загрязнений, ради которой карта и существует.
+	 *
+	 * Сбой любой из двух загрузок не ломает экран: остаются демо-точки, и об
+	 * этом честно говорит плашка ниже.
+	 */
+	let remoteError = $state(false);
+	let loadedFor: string | null = null;
+	$effect(() => {
+		const profileId = session.profile?.id;
+		if (!profileId || loadedFor === profileId) return;
+		loadedFor = profileId;
+
+		Promise.allSettled([
+			session.role === 'volunteer'
+				? hypotheses.mine({ limit: 100 }) // потолок ручки — 100
+				: Promise.resolve({ items: [], total: 0 }),
+			hypotheses.mapLayers()
+		]).then(([mine, layers]) => {
+			const own =
+				mine.status === 'fulfilled'
+					? mine.value.items.map((h) => hypothesisToReport(h, data.territories, authorName))
+					: [];
+			const approved =
+				layers.status === 'fulfilled' ? mapLayersToReports(layers.value, data.territories) : [];
+
+			// Свои точки первыми: у них есть причина отказа и статус проверки,
+			// а в общем слое та же точка обезличена.
+			const ownIds = new Set(own.map((r) => r.id));
+			reports.mergeRemote([...own, ...approved.filter((r) => !ownIds.has(r.id))]);
+			remoteError = mine.status === 'rejected' && layers.status === 'rejected';
+		});
+	});
+
 	let picked = $state<string | null>(null);
-	const activeId = $derived(picked ?? session.organizationId ?? ALL_TERRITORIES);
+	const activeId = $derived(picked ?? myTerritorySlug ?? ALL_TERRITORIES);
 	/** null — обзор всей страны. */
 	const territory = $derived(
 		activeId === ALL_TERRITORIES ? null : (data.territories.find((t) => t.id === activeId) ?? null)
@@ -117,7 +164,17 @@
 		draftArea = [];
 	}
 
-	function submit({ title, note, photo }: { title: string; note: string; photo: File | null }) {
+	function submit({
+		title,
+		note,
+		photo,
+		trash
+	}: {
+		title: string;
+		note: string;
+		photo: File | null;
+		trash?: TrashDetails;
+	}) {
 		const territoryId = territory?.id ?? data.territories[0].id;
 
 		if (kind === 'trash') {
@@ -126,7 +183,15 @@
 			// результат в этот же мок-стор, поэтому здесь `reports.add` не нужен.
 			const [lon, lat] = draftPoint!;
 			offlineQueue.enqueue(
-				{ lat, lon, description: note || title, title, territoryId, authorName },
+				{
+					lat,
+					lon,
+					description: note || title,
+					title,
+					territoryId,
+					authorName,
+					trash
+				},
 				photo
 			);
 			cancelDrawing();
@@ -197,11 +262,38 @@
 					</div>
 				</div>
 
+				{#if remoteError}
+					<!-- Молчать нельзя: человек увидит демо-точки и решит, что его
+					     наблюдение пропало. -->
+					<p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+						Сервер не ответил — показаны демонстрационные точки. Ваши наблюдения не потеряны, они
+						появятся, когда связь восстановится.
+					</p>
+				{/if}
+
+				{#if territoryMismatch}
+					<p class="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+						Организация
+						{#if session.organizationName}
+							«{session.organizationName}»
+						{/if}
+						не сопоставлена с ООПТ на карте
+						{#if session.organization && !session.organization.has_territory}
+							— задайте границы в кабинете
+						{:else if session.organization?.territory_osm_id}
+							(OSM {session.organization.territory_osm_id} нет в списке территорий)
+						{:else}
+							— показан обзор всей России
+						{/if}.
+					</p>
+				{/if}
+
 				<TerritoryPicker
 					territories={data.territories}
 					value={activeId}
 					onchange={selectTerritory}
 					locked={isStaff}
+					myTerritoryId={myTerritorySlug}
 				/>
 
 				<div class="flex gap-1 rounded-full bg-slate-100 p-1 text-xs">

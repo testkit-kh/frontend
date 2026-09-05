@@ -2,22 +2,10 @@
 	import { Check, Inbox, Plane, X } from '@lucide/svelte';
 	import { ApiError } from '$lib/api/client';
 	import { hypotheses, type Hypothesis } from '$lib/api/endpoints';
+	import { TRASH_CATEGORY_LABEL } from '$lib/data/trash';
 	import SatelliteView from '$lib/components/SatelliteView.svelte';
 	import StatusPill from '$lib/components/StatusPill.svelte';
 	import { formatCoords, formatDate, formatMoney } from '$lib/format';
-
-	const TRASH_CATEGORY_LABEL: Record<string, string> = {
-		plastic: 'Пластик',
-		fishing_gear: 'Рыболовные снасти',
-		glass: 'Стекло',
-		metal: 'Металл',
-		wood: 'Дерево',
-		rubber: 'Резина',
-		hazardous: 'Опасные отходы',
-		household: 'Бытовой мусор',
-		construction: 'Стройматериалы',
-		other: 'Прочее'
-	};
 
 	let items = $state<Hypothesis[]>([]);
 	let loading = $state(true);

@@ -9,6 +9,9 @@
 		Users,
 		X
 	} from '@lucide/svelte';
+	import { resolve } from '$app/paths';
+	import { ApiError } from '$lib/api/client';
+	import { events } from '$lib/api/endpoints';
 	import StatusBadge from './StatusBadge.svelte';
 	import { centroid } from '$lib/map/features';
 	import { formatCoords, formatDate, plural } from '$lib/format';
@@ -38,14 +41,69 @@
 
 	let joined = $state(false);
 	let date = $state('');
+	let busy = $state(false);
+	let actionError = $state<string | null>(null);
+	let actionNote = $state<string | null>(null);
 
 	let lastReport = '';
 	$effect(() => {
 		if (lastReport === report.id) return;
 		lastReport = report.id;
-		joined = false;
-		date = '';
+		joined = report.event?.isJoined ?? false;
+		date = report.event?.date ?? '';
+		actionError = null;
+		actionNote = null;
 	});
+
+	async function toggleJoin() {
+		const eventId = report.event?.id;
+		if (!eventId || busy) return;
+		busy = true;
+		actionError = null;
+		actionNote = null;
+		try {
+			if (joined) {
+				await events.leave(eventId);
+				joined = false;
+				reports.join(report.id, false);
+				actionNote = 'Запись отменена.';
+			} else {
+				const res = await events.join(eventId);
+				joined = true;
+				reports.join(report.id, true);
+				actionNote = res.already_joined ? 'Вы уже были записаны.' : 'Вы записаны на уборку.';
+			}
+		} catch (cause) {
+			actionError = cause instanceof ApiError ? cause.message : 'Не удалось изменить запись';
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function scheduleEvent() {
+		if (!date || busy) return;
+		busy = true;
+		actionError = null;
+		actionNote = null;
+		try {
+			if (report.event?.id) {
+				const updated = await events.update(report.event.id, {
+					scheduled_at: new Date(`${date}T10:00:00`).toISOString()
+				});
+				reports.schedule(report.id, (updated.scheduled_at ?? date).slice(0, 10), updated.id);
+				actionNote = 'Дата уборки сохранена.';
+			} else {
+				// Демо-точки без event_id — только локально; живые создаются
+				// при approve в очереди ООПТ.
+				reports.schedule(report.id, date);
+				actionNote = 'Дата сохранена локально. Для живых точек назначьте выезд в «Мероприятия».';
+			}
+		} catch (cause) {
+			actionError = cause instanceof ApiError ? cause.message : 'Не удалось сохранить дату';
+		} finally {
+			busy = false;
+		}
+	}
 </script>
 
 <article
@@ -130,6 +188,13 @@
 			</div>
 		</dl>
 
+		{#if actionError}
+			<p class="text-xs text-red-700">{actionError}</p>
+		{/if}
+		{#if actionNote}
+			<p class="text-xs text-emerald-700">{actionNote}</p>
+		{/if}
+
 		{#if report.event}
 			<div class="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
 				<div>
@@ -142,22 +207,26 @@
 						{plural(report.event.signed, 'участник', 'участника', 'участников')}
 					</p>
 				</div>
-				{#if role === 'volunteer'}
+				{#if role === 'volunteer' && report.event.id}
 					<button
 						type="button"
-						disabled={joined}
-						onclick={() => {
-							reports.join(report.id);
-							joined = true;
-						}}
+						disabled={busy}
+						onclick={toggleJoin}
 						class="flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:bg-emerald-200 disabled:text-emerald-700"
 					>
 						{#if joined}
-							<Check size={16} /> Вы записаны
+							<Check size={16} /> {busy ? 'Отменяем…' : 'Отменить запись'}
 						{:else}
-							Записаться на уборку
+							{busy ? 'Записываем…' : 'Записаться на уборку'}
 						{/if}
 					</button>
+				{:else if role === 'volunteer' && !report.event.id}
+					<a
+						href={resolve('/events')}
+						class="flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+					>
+						Открыть список уборок
+					</a>
 				{/if}
 			</div>
 		{:else if role === 'staff' && report.status === 'confirmed'}
@@ -172,12 +241,18 @@
 				</label>
 				<button
 					type="button"
-					disabled={!date}
-					onclick={() => reports.schedule(report.id, date)}
+					disabled={!date || busy}
+					onclick={scheduleEvent}
 					class="flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
 				>
-					<CalendarPlus size={16} /> Объявить сбор
+					<CalendarPlus size={16} />
+					{busy ? 'Сохраняем…' : 'Объявить сбор'}
 				</button>
+				<p class="text-xs text-slate-500">
+					После подтверждения точки мероприятие уже создано — здесь задаётся дата. Полный редактор —
+					в
+					<a href={resolve('/org/events')} class="underline">Мероприятиях</a>.
+				</p>
 			</div>
 		{/if}
 	</div>

@@ -33,7 +33,13 @@ export type Report = {
 		minutes: number;
 		geometry: { type: 'LineString'; coordinates: [number, number][] };
 	};
-	event?: { date: string; signed: number };
+	event?: {
+		/** Id мероприятия на бэке; без него кнопка записи только локальная. */
+		id?: string;
+		date: string;
+		signed: number;
+		isJoined?: boolean;
+	};
 	geometry:
 		| { type: 'Point'; coordinates: [number, number] }
 		| { type: 'Polygon'; coordinates: [number, number][][] };

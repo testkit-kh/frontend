@@ -21,6 +21,7 @@ export type CompanyInfo = Schemas['CompanyInfoOut'];
 export type AnalyticsSummary = Schemas['AnalyticsSummaryOut'];
 export type ParentalConsent = Schemas['ParentalConsentOut'];
 export type Hypothesis = Schemas['HypothesisOut'];
+export type MyHypothesis = Schemas['MyHypothesisOut'];
 export type CertificateStatus = Schemas['CertificateStatus'];
 export type ConsentStatus = Schemas['ConsentStatus'];
 export type PendingCertificate = Schemas['PendingCertificateOut'];
@@ -50,12 +51,23 @@ export function isCoordinatorProfile(profile: Profile): profile is CoordinatorPr
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const auth = {
-	/** Логин совместим с OAuth2 password flow, поэтому форма, а не JSON. */
+	/** Логин совместим с OAuth2 password flow, поэтому форма, а не JSON.
+	 *  Вместе с access выставляется httpOnly refresh-кука. */
 	login: (email: string, password: string) =>
 		request<Schemas['TokenResponse']>('/auth/login', {
 			form: { username: email, password },
 			anonymous: true
 		}),
+
+	/** Обмен refresh-куки на access. Без Bearer. */
+	refresh: () =>
+		request<Schemas['TokenResponse']>('/auth/refresh', {
+			method: 'POST',
+			anonymous: true
+		}),
+
+	/** Отзыв refresh-куки. Идемпотентен. */
+	logout: () => request<void>('/auth/logout', { method: 'POST', anonymous: true }),
 
 	registerVolunteer: (body: Schemas['VolunteerRegisterRequest']) =>
 		request<VolunteerProfile>('/auth/register/volunteer', { body, anonymous: true }),
@@ -143,6 +155,13 @@ export const hypotheses = {
 	create: (body: Schemas['HypothesisCreateRequest']) =>
 		request<Hypothesis>('/api/v1/hypotheses', { body }),
 
+	/** Свои точки со статусами и причиной отказа — лента «Мои точки».
+	 *  Ответ страничный (`items`/`total`), а не голый список. */
+	mine: (params: { limit?: number; offset?: number } = {}) =>
+		request<Schemas['MyHypothesesListOut']>('/api/v1/hypotheses/my', {
+			query: { limit: params.limit, offset: params.offset }
+		}),
+
 	pending: () => request<Hypothesis[]>('/api/v1/hypotheses/pending'),
 
 	validate: (id: string, status: Schemas['HypothesisStatus'], reason?: string) =>
@@ -185,17 +204,32 @@ export const analytics = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const events = {
-	/** Свои мероприятия (сотрудник) — все статусы своей ООПТ, с пагинацией. */
+	/** Одна ручка на две роли: сотруднику — все мероприятия своей ООПТ,
+	 *  волонтёру — запланированные по всей программе. */
 	list: (params: { status?: Schemas['EventStatus']; limit?: number; offset?: number } = {}) =>
 		request<EventList>('/api/v1/events', {
 			query: { status: params.status, limit: params.limit, offset: params.offset }
 		}),
+
+	/** Записаться (волонтёр). Идемпотентно: повтор возвращает already_joined. */
+	join: (id: string) =>
+		request<Schemas['EventJoinOut']>(`/api/v1/events/${id}/join`, { method: 'POST' }),
+
+	/** Отменить запись. */
+	leave: (id: string) => request<void>(`/api/v1/events/${id}/join`, { method: 'DELETE' }),
 
 	update: (id: string, body: Schemas['EventUpdateRequest']) =>
 		request<CleanupEvent>(`/api/v1/events/${id}`, { method: 'PATCH', body }),
 
 	complete: (id: string, body: Schemas['EventCompleteRequest']) =>
 		request<Schemas['EventCompleteResponse']>(`/api/v1/events/${id}/complete`, {
+			method: 'POST',
+			body
+		}),
+
+	/** Фото до/после уборки (сотрудник), после complete. */
+	beforeAfter: (id: string, body: Schemas['EventBeforeAfterRequest']) =>
+		request<Schemas['EventBeforeAfterOut']>(`/api/v1/events/${id}/before-after`, {
 			method: 'POST',
 			body
 		})

@@ -2,6 +2,7 @@
 	import {
 		Bell,
 		Building2,
+		CalendarDays,
 		Cloud,
 		CloudOff,
 		GraduationCap,
@@ -18,16 +19,13 @@
 	import { unread } from '$lib/state/notifications.svelte';
 	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import type { Territory } from '$lib/data/territories';
 
 	const pendingCount = $derived(offlineQueue.pending.length + offlineQueue.failed.length);
 
 	const profile = $derived(session.profile);
 
-	// Название ООПТ берётся из загруженных территорий, а не зашивается в вёрстку:
-	// в проекте их 19, от Кроноцкого до Куршской косы.
-	const territories = $derived((page.data?.territories ?? []) as Territory[]);
-	const orgName = $derived(territories.find((t) => t.id === session.organizationId)?.name ?? '');
+	// Имя ООПТ прямо из профиля staff — не зависит от слагов territories.json.
+	const orgName = $derived(session.organizationName ?? '');
 
 	// Знак в шапке живой: хмурится, когда по стране много неубранных точек.
 	// Это единственный индикатор состояния, который человек видит всегда.
@@ -45,7 +43,12 @@
 						{ href: resolve('/org'), label: 'Кабинет ООПТ', icon: Building2 }
 					]
 				: session.hasMapAccess
-					? [{ href: resolve('/map'), label: 'Карта', icon: Map }]
+					? [
+							{ href: resolve('/map'), label: 'Карта', icon: Map },
+							// Уборки — вторая половина смысла для волонтёра: точка без
+							// выезда так и остаётся точкой.
+							{ href: resolve('/events'), label: 'Уборки', icon: CalendarDays }
+						]
 					: [{ href: resolve('/course'), label: 'Обучение', icon: GraduationCap }]
 	);
 
@@ -98,17 +101,14 @@
 			</p>
 		</div>
 		{#if pendingCount > 0 || !offlineQueue.online}
-			<!-- Индикатор связи + бейдж очереди в одном элементе: клик и есть
-			     «отправить сейчас», отдельный экран под это не заводим. -->
-			<button
-				type="button"
-				onclick={() => offlineQueue.syncAll()}
-				disabled={offlineQueue.syncing || !offlineQueue.online}
+			<!-- Бейдж ведёт на экран очереди; быстрый sync — отдельной кнопкой там. -->
+			<a
+				href={resolve('/offline')}
 				aria-label={offlineQueue.online
-					? `Отправить ${pendingCount} точек, ждущих синхронизации`
-					: 'Нет связи с сервером'}
-				title={offlineQueue.online ? 'Отправить сейчас' : 'Нет связи — точки отправятся сами'}
-				class="relative flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-60"
+					? `Очередь: ${pendingCount} точек ждут отправки`
+					: 'Нет связи с сервером — открыть очередь'}
+				title={offlineQueue.online ? 'Очередь офлайн' : 'Нет связи — точки отправятся сами'}
+				class="relative flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
 			>
 				{#if offlineQueue.online}
 					<Cloud size={16} />
@@ -122,7 +122,7 @@
 						{pendingCount > 9 ? '9+' : pendingCount}
 					</span>
 				{/if}
-			</button>
+			</a>
 		{/if}
 
 		<a

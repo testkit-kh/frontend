@@ -5,6 +5,8 @@ yarn.lock
 bun.lock
 bun.lockb
 
-# Miscellaneous
+# Generated / bulky
+openapi.json
+src/lib/api/schema.d.ts
 /static/
 /scripts/cache/

@@ -218,7 +218,10 @@
 				'fill-color': STATUS_MATCH,
 				'fill-opacity': ['case', isSelected, 0.5, hovered, 0.42, 0.28]
 			}}
-			onclick={(event) => pick(event.features?.[0]?.properties?.id)}
+			onclick={(event) => {
+				if (drawMode !== 'off') return;
+				pick(event.features?.[0]?.properties?.id);
+			}}
 		/>
 		<LineLayer
 			paint={{
@@ -287,12 +290,20 @@
 					'circle-stroke-color': '#ffffff',
 					'circle-stroke-width': 2
 				}}
-				onclick={(event) => pick(event.features?.[0]?.properties?.id)}
+				onclick={(event) => {
+					if (drawMode !== 'off') return;
+					pick(event.features?.[0]?.properties?.id);
+				}}
 			/>
 		</GeoJSON>
 	{:else}
 		{#each items as report (report.id)}
-			<ReportMarker {report} selected={report.id === selectedId} onselect={(id) => pick(id)} />
+			<ReportMarker
+				{report}
+				selected={report.id === selectedId}
+				onselect={(id) => pick(id)}
+				interactive={drawMode === 'off'}
+			/>
 		{/each}
 	{/if}
 

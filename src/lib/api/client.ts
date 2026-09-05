@@ -4,31 +4,16 @@ import type { components } from './schema';
 /**
  * Клиент бэкенда.
  *
- * Типы не пишутся руками, а генерируются из OpenAPI (`pnpm run api:types`):
- * иначе они молча разъезжаются с бэком, и об этом узнают в проде. Схема лежит
- * в репозитории, поэтому сборке не нужен работающий сервер.
- *
- * ## Про хранение токена
- *
- * Токен лежит в `localStorage`. Это осознанный компромисс, а не недосмотр:
- * у бэкенда пока нет refresh-токенов, а держать access только в памяти значит
- * разлогинивать человека на каждом обновлении страницы — на берегу, где
- * интернет и так рвётся, это неприемлемо.
- *
- * Плата за это — уязвимость к XSS: любой выполненный на странице чужой скрипт
- * прочитает токен. Правильное решение — refresh в httpOnly-куке и короткий
- * access в памяти; оно требует ручек на бэкенде и записано в PLAN.md как долг.
- * Пока его нет, единственная защита — не допускать XSS: Svelte экранирует
- * вывод по умолчанию, и в проекте нет ни одного `{@html}`.
+ * Типы из OpenAPI (`pnpm run api:types`). Access-токен — только в памяти;
+ * долгая сессия — httpOnly refresh-кука (`/auth/refresh`, P1-7).
+ * `credentials: 'include'` обязателен на каждом запросе, иначе кука не уйдёт.
  */
 
 export type Schemas = components['schemas'];
 
-const TOKEN_KEY = 'kosmo.token';
+/** Legacy-ключ: раньше access лежал в localStorage. Чистим при любой записи. */
+const LEGACY_TOKEN_KEY = 'kosmo.token';
 
-/** Базовый адрес API. По умолчанию — пусто: те же пути (/auth, /api), что
- *  знает и дев-прокси Vite, и прод-Caddy. VITE_API_URL нужен только если API
- *  вынесен на отдельный домен. */
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiError extends Error {
@@ -41,34 +26,24 @@ export class ApiError extends Error {
 		this.name = 'ApiError';
 	}
 
-	/** Не авторизован или токен протух. */
 	get isAuth(): boolean {
 		return this.status === 401;
 	}
 
-	/** Доступ есть, но не хватает прав или не пройден шаг воронки. */
 	get isForbidden(): boolean {
 		return this.status === 403;
 	}
 
-	/** Внешний сервис недоступен — это не вина пользователя. */
 	get isUnavailable(): boolean {
 		return this.status === 503;
 	}
 }
 
 let token: string | null = null;
+/** Один refresh на всех параллельных 401 — иначе ротация съест куку. */
+let refreshInFlight: Promise<boolean> | null = null;
 
 export function loadToken(): string | null {
-	if (token) return token;
-	if (!browser) return null;
-	try {
-		token = localStorage.getItem(TOKEN_KEY);
-	} catch {
-		// Приватный режим или заблокированное хранилище: работаем без
-		// сохранения между перезагрузками, но не падаем.
-		token = null;
-	}
 	return token;
 }
 
@@ -76,14 +51,12 @@ export function setToken(next: string | null) {
 	token = next;
 	if (!browser) return;
 	try {
-		if (next) localStorage.setItem(TOKEN_KEY, next);
-		else localStorage.removeItem(TOKEN_KEY);
+		localStorage.removeItem(LEGACY_TOKEN_KEY);
 	} catch {
-		/* хранилище недоступно — токен живёт только в памяти вкладки */
+		/* private mode */
 	}
 }
 
-/** Вызывается при 401: слой сессии на это разлогинивает и уводит на вход. */
 let onUnauthorized: (() => void) | null = null;
 export function setUnauthorizedHandler(handler: () => void) {
 	onUnauthorized = handler;
@@ -92,13 +65,44 @@ export function setUnauthorizedHandler(handler: () => void) {
 type RequestOptions = {
 	method?: string;
 	body?: unknown;
-	/** Данные формы вместо JSON — нужно для OAuth2-совместимого /auth/login. */
 	form?: Record<string, string>;
 	query?: Record<string, string | number | boolean | undefined>;
-	/** Не отправлять токен: ручки регистрации и реестра работают без него. */
 	anonymous?: boolean;
 	signal?: AbortSignal;
+	/** Внутренний: уже один раз ходили в refresh. */
+	_retried?: boolean;
 };
+
+/**
+ * Обменять refresh-куку на новый access. Без Bearer — только cookie.
+ * Возвращает false при любой неудаче (истёк, кража → 403, нет сети).
+ */
+export async function refreshAccess(): Promise<boolean> {
+	if (!browser) return false;
+	if (refreshInFlight) return refreshInFlight;
+
+	refreshInFlight = (async () => {
+		try {
+			const response = await fetch(new URL(`${BASE}/auth/refresh`, location.origin), {
+				method: 'POST',
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				setToken(null);
+				return false;
+			}
+			const payload = (await response.json()) as Schemas['TokenResponse'];
+			setToken(payload.access_token);
+			return true;
+		} catch {
+			return false;
+		} finally {
+			refreshInFlight = null;
+		}
+	})();
+
+	return refreshInFlight;
+}
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
 	const url = new URL(`${BASE}${path}`, browser ? location.origin : 'http://localhost');
@@ -125,16 +129,20 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 			method: options.method ?? (body ? 'POST' : 'GET'),
 			headers,
 			body,
+			credentials: 'include',
 			signal: options.signal
 		});
 	} catch (cause) {
-		// Сеть пропала. Отдельный статус 0, чтобы вызывающий код мог отличить
-		// «нет связи» от «сервер ответил ошибкой» — на берегу это разные
-		// ситуации с разными подсказками для человека.
 		throw new ApiError(0, 'Нет связи с сервером', cause);
 	}
 
-	if (response.status === 401 && !options.anonymous) {
+	if (response.status === 401 && !options.anonymous && !options._retried) {
+		const ok = await refreshAccess();
+		if (ok) {
+			return request<T>(path, { ...options, _retried: true });
+		}
+		onUnauthorized?.();
+	} else if (response.status === 401 && !options.anonymous) {
 		onUnauthorized?.();
 	}
 
@@ -149,12 +157,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 	return payload as T;
 }
 
-/**
- * Человекочитаемое сообщение из ответа FastAPI.
- *
- * `detail` бывает строкой (наши HTTPException) и массивом ошибок валидации
- * (422 от pydantic) — показывать пользователю `[object Object]` нельзя.
- */
 function detailOf(payload: unknown, status: number): string {
 	if (payload && typeof payload === 'object' && 'detail' in payload) {
 		const detail = (payload as { detail: unknown }).detail;
@@ -163,6 +165,11 @@ function detailOf(payload: unknown, status: number): string {
 			const messages = detail.map((item) => (item as { msg?: string }).msg).filter(Boolean);
 			if (messages.length) return messages.join('; ');
 		}
+	}
+	if (status >= 500) {
+		return status === 503
+			? 'Сервис временно недоступен — попробуйте через пару минут.'
+			: 'Сервер не смог обработать запрос. Мы уже видим эту ошибку — попробуйте позже.';
 	}
 	return `Ошибка ${status}`;
 }

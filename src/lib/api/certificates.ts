@@ -1,28 +1,12 @@
 import { request } from './client';
+import type { Schemas } from './client';
 
 /**
- * Сертификаты и публичная верификация (PLAN.md 5.6).
- *
- * Контракт спроектирован нами для бэкендера — ручек пока нет ни одной: нет
- * таблицы `certificates`, PDF, QR, `/verify/{code}` (ни в коде, ни в
- * `BACKEND_TASKS.md`). Отдельно от `endpoints.ts`: тот генерируется из
- * реального `openapi.json` (`pnpm run api:types`), а этих ручек там нет —
- * появятся сами, как только бэк их реализует и типы перегенерируются.
- *
- * До реализации `mine()`/`verify()` отвечают 404 — вызывающий код это
- * ожидает и показывает мягкое «скоро будет доступно», а не падает.
- *
- * Предлагаемый контракт:
- *   GET  /api/v1/certificates/me               → CertificateInfo
- *   GET  /api/v1/certificates/verify/{code}     → CertificateVerification (anonymous)
- *   POST /api/v1/certificates/{code}/share      → { ok: true }, шлёт `certificate_shared`
+ * Выданные сертификаты (PLAN 5.6).
+ * Типы частично зеркалят OpenAPI; verify отдаёт плоскую схему с optional-полями.
  */
 
-export type CertificateInfo = {
-	code: string;
-	pdf_url: string;
-	issued_at: string;
-};
+export type CertificateInfo = Schemas['IssuedCertificateOut'];
 
 export type CertificateVerification =
 	| {
@@ -37,13 +21,36 @@ export type CertificateVerification =
 	| { valid: true; revoked: true; revoked_at: string }
 	| { valid: false };
 
+function adaptVerify(raw: Schemas['CertificateVerificationOut']): CertificateVerification {
+	if (!raw.valid) return { valid: false };
+	if (raw.revoked) {
+		return {
+			valid: true,
+			revoked: true,
+			revoked_at: raw.revoked_at ?? new Date().toISOString()
+		};
+	}
+	return {
+		valid: true,
+		revoked: false,
+		full_name: raw.full_name ?? '',
+		course: raw.course ?? '',
+		issued_at: raw.issued_at ?? new Date().toISOString(),
+		points_confirmed: raw.points_confirmed ?? 0,
+		hours: raw.hours ?? 0
+	};
+}
+
 export const certificates = {
 	mine: () => request<CertificateInfo>('/api/v1/certificates/me'),
 
-	verify: (code: string) =>
-		request<CertificateVerification>(`/api/v1/certificates/verify/${encodeURIComponent(code)}`, {
-			anonymous: true
-		}),
+	verify: async (code: string) => {
+		const raw = await request<Schemas['CertificateVerificationOut']>(
+			`/api/v1/certificates/verify/${encodeURIComponent(code)}`,
+			{ anonymous: true }
+		);
+		return adaptVerify(raw);
+	},
 
 	share: (code: string) =>
 		request<{ ok: true }>(`/api/v1/certificates/${encodeURIComponent(code)}/share`, {

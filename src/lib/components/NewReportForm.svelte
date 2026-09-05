@@ -1,5 +1,14 @@
 <script lang="ts">
 	import { MapPin, Undo2, Waves, X } from '@lucide/svelte';
+	import {
+		ACCESS_TYPE_LABEL,
+		ACCESS_TYPES,
+		TRASH_CATEGORIES,
+		TRASH_CATEGORY_LABEL,
+		type AccessType,
+		type TrashCategory,
+		type TrashDetails
+	} from '$lib/data/trash';
 	import { formatCoords } from '$lib/format';
 	import type { ReportKind } from '$lib/types';
 
@@ -18,23 +27,50 @@
 		onkind: (kind: ReportKind) => void;
 		onundo: () => void;
 		oncancel: () => void;
-		onsubmit: (values: { title: string; note: string; photo: File | null }) => void;
+		onsubmit: (values: {
+			title: string;
+			note: string;
+			photo: File | null;
+			trash?: TrashDetails;
+		}) => void;
 	} = $props();
 
 	let title = $state('');
 	let note = $state('');
 	let photo = $state<File | null>(null);
+	let category = $state<TrashCategory | ''>('');
+	let volume = $state('');
+	let access = $state<AccessType | ''>('');
 
 	const ready = $derived(
 		title.trim().length > 2 && (kind === 'trash' ? Boolean(draftPoint) : draftArea.length >= 3)
 	);
+
+	function buildTrash(): TrashDetails | undefined {
+		if (kind !== 'trash') return undefined;
+		const volumeNum = volume.trim() ? Number(volume.replace(',', '.')) : NaN;
+		const trash: TrashDetails = {};
+		if (category) {
+			trash.dominant_category = category;
+			trash.trash_categories = [category];
+		}
+		if (access) trash.access_type = access;
+		if (Number.isFinite(volumeNum) && volumeNum > 0) trash.estimated_volume_m3 = volumeNum;
+		return Object.keys(trash).length ? trash : undefined;
+	}
 </script>
 
 <form
 	class="flex flex-col gap-4 p-4"
 	onsubmit={(event) => {
 		event.preventDefault();
-		if (ready) onsubmit({ title: title.trim(), note: note.trim(), photo });
+		if (ready)
+			onsubmit({
+				title: title.trim(),
+				note: note.trim(),
+				photo,
+				trash: buildTrash()
+			});
 	}}
 >
 	<div class="flex items-start gap-3">
@@ -120,6 +156,44 @@
 	</label>
 
 	{#if kind === 'trash'}
+		<label class="flex flex-col gap-1 text-xs text-slate-500">
+			Тип мусора
+			<select
+				bind:value={category}
+				class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+			>
+				<option value="">Не указан</option>
+				{#each TRASH_CATEGORIES as value (value)}
+					<option {value}>{TRASH_CATEGORY_LABEL[value]}</option>
+				{/each}
+			</select>
+		</label>
+
+		<div class="grid grid-cols-2 gap-3">
+			<label class="flex flex-col gap-1 text-xs text-slate-500">
+				Объём, м³
+				<input
+					bind:value={volume}
+					type="text"
+					inputmode="decimal"
+					placeholder="например 0.5"
+					class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				/>
+			</label>
+			<label class="flex flex-col gap-1 text-xs text-slate-500">
+				Как добраться
+				<select
+					bind:value={access}
+					class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				>
+					<option value="">Не указано</option>
+					{#each ACCESS_TYPES as value (value)}
+						<option {value}>{ACCESS_TYPE_LABEL[value]}</option>
+					{/each}
+				</select>
+			</label>
+		</div>
+
 		<label class="flex flex-col gap-1 text-xs text-slate-500">
 			Фото (необязательно)
 			<input

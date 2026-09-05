@@ -55,4 +55,9 @@
 		<h3 class="mb-2 text-sm font-medium text-slate-700">Операционка территории</h3>
 		<DashboardEmbed slug="oopt" />
 	</div>
+
+	<div>
+		<h3 class="mb-2 text-sm font-medium text-slate-700">Экологический эффект</h3>
+		<DashboardEmbed slug="impact" />
+	</div>
 </div>

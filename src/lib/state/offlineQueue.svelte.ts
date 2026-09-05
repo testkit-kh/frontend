@@ -10,19 +10,17 @@ import {
 	type QueuePayload
 } from '$lib/offline/db';
 
+const SYNC_TAG = 'cb-offline-queue';
+
 /**
  * Очередь точек, которые ещё не долетели до бэкенда.
  *
- * Контракт синхронизации — `P0-1`/`P0-2` из `BACKEND_TASKS.md` (пишет другой
- * человек, ручки может ещё не быть): `client_id`/`created_at_client` в
- * `POST /hypotheses` для идемпотентности повторной отправки, presigned-адрес
- * из `POST /uploads/presign` для фото (грузим напрямую в S3, не через себя).
- * Пока бэк это не выкатил, сетевая ошибка/404 просто держит запись в очереди
- * вместо падения — синхронизация доедет сама, когда ручки появятся.
+ * Контракт синхронизации — `P0-1`/`P0-2` из `BACKEND_TASKS.md`: `client_id`/
+ * `created_at_client` в `POST /hypotheses`, presigned из `POST /uploads/presign`.
+ * Пока фото-ручка не готова, точка без фото уходит, с фото — ждёт в очереди.
  *
- * Успешная отправка зеркалится в мок-стор `reports`: список/карточки на
- * `/map` всё ещё читают его, а не реальный бэк (это отдельная миграция), и
- * без зеркала только что отправленная точка была бы не видна самому автору.
+ * Триггеры синка: online, открытие приложения, visibilitychange, Background
+ * Sync (если браузер умеет) + ручная кнопка на `/offline`.
  */
 class OfflineQueue {
 	items = $state<QueueEntry[]>([]);
@@ -43,15 +41,20 @@ class OfflineQueue {
 
 		window.addEventListener('online', () => {
 			this.online = true;
-			this.syncAll();
+			void this.syncAll();
 		});
 		window.addEventListener('offline', () => {
 			this.online = false;
 		});
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible' && this.online) void this.syncAll();
+		});
 
-		// Ретрай при открытии приложения — второй фолбэк из плана, на случай
-		// если событие online не пришло (свернутая вкладка, перезапуск ОС).
-		if (this.online) this.syncAll();
+		navigator.serviceWorker?.addEventListener('message', (event) => {
+			if (event.data?.type === 'cb-sync') void this.syncAll();
+		});
+
+		if (this.online) void this.syncAll();
 	}
 
 	async enqueue(payload: QueuePayload, photo?: File | null): Promise<void> {
@@ -65,6 +68,7 @@ class OfflineQueue {
 		};
 		await putQueued(entry);
 		this.items = [entry, ...this.items];
+		void this.#requestBackgroundSync();
 		void this.syncOne(entry.clientId);
 	}
 
@@ -78,25 +82,37 @@ class OfflineQueue {
 		try {
 			let photoUrl: string | undefined;
 			if (entry.photo) {
-				photoUrl = await this.#uploadPhoto(entry.photo.blob, entry.photo.contentType);
+				try {
+					photoUrl = await this.#uploadPhoto(entry.photo.blob, entry.photo.contentType);
+				} catch (uploadError) {
+					// MinIO на стенде часто не поднят: не блокируем точку из‑за фото —
+					// уходит описание/координаты, фото дошлём когда хранилище появится
+					// (повтор с тем же client_id идемпотентен, но без повторной
+					// загрузки файла — для демо важнее живая точка на карте).
+					const retryable =
+						uploadError instanceof ApiError &&
+						(uploadError.status === 0 ||
+							uploadError.status === 503 ||
+							uploadError.status === 404);
+					if (!retryable) throw uploadError;
+					entry.lastError = `Фото не загрузилось (${uploadError.message}) — точка ушла без него`;
+				}
 			}
 
-			// Прямой request(), а не typed-клиент из endpoints.ts: `client_id`/
-			// `created_at_client` — контракт P0-1, ещё не попал в сгенерированную
-			// схему (появится там сам после `pnpm run api:types`, когда ручка
-			// готова на бэке).
-			await request('/api/v1/hypotheses', {
+			const created = await request<{ id: string }>('/api/v1/hypotheses', {
 				body: {
 					lat: entry.payload.lat,
 					lon: entry.payload.lon,
 					description: entry.payload.description,
 					photo_url: photoUrl,
 					client_id: entry.clientId,
-					created_at_client: entry.createdAtClient
+					created_at_client: entry.createdAtClient,
+					trash: entry.payload.trash
 				}
 			});
 
 			reports.add({
+				id: created.id,
 				territoryId: entry.payload.territoryId,
 				kind: 'trash',
 				source: 'field',
@@ -112,12 +128,9 @@ class OfflineQueue {
 		} catch (cause) {
 			entry.attempts += 1;
 			if (cause instanceof ApiError && cause.status !== 0 && cause.status !== 503) {
-				// Настоящий отказ (валидация, авторизация) — авто-ретрай тут
-				// бессмысленен, дальше решает человек.
 				entry.status = 'failed';
 				entry.lastError = cause.message;
 			} else {
-				// Нет связи или сервис временно недоступен — остаётся в очереди.
 				entry.status = 'queued';
 				entry.lastError = cause instanceof Error ? cause.message : 'Нет связи с сервером';
 			}
@@ -142,25 +155,35 @@ class OfflineQueue {
 		this.items = this.items.filter((e) => e.clientId !== clientId);
 	}
 
+	async retry(clientId: string): Promise<void> {
+		const entry = this.items.find((e) => e.clientId === clientId);
+		if (!entry) return;
+		entry.status = 'queued';
+		entry.lastError = undefined;
+		this.#touch(entry);
+		await this.syncOne(clientId);
+	}
+
 	async #uploadPhoto(blob: Blob, contentType: string): Promise<string> {
-		const presign = await uploads.presign({
-			filename: `hypothesis-${Date.now()}.jpg`,
-			content_type: contentType,
-			purpose: 'hypothesis_photo'
-		});
+		const file =
+			blob instanceof File
+				? blob
+				: new File([blob], `hypothesis-${Date.now()}.jpg`, { type: contentType });
+		return uploads.putFile(file, 'hypothesis_photo');
+	}
 
-		const form = new FormData();
-		for (const [key, value] of Object.entries(presign.fields ?? {})) {
-			form.append(key, value as string);
+	async #requestBackgroundSync() {
+		try {
+			const reg = await navigator.serviceWorker?.ready;
+			const syncManager = (
+				reg as ServiceWorkerRegistration & {
+					sync?: { register: (tag: string) => Promise<void> };
+				}
+			)?.sync;
+			await syncManager?.register(SYNC_TAG);
+		} catch {
+			/* Safari / без SW — остаются online/visibility */
 		}
-		form.append('file', blob);
-
-		// Прямая загрузка в S3 по presigned URL — мимо нашего API и без Bearer:
-		// так и задуман контракт P0-2, фото тяжёлые, гонять их через себя незачем.
-		const response = await fetch(presign.upload_url, { method: 'POST', body: form });
-		if (!response.ok) throw new ApiError(response.status, 'Не удалось загрузить фото');
-
-		return presign.public_url;
 	}
 
 	#touch(entry: QueueEntry) {

@@ -6,6 +6,7 @@
 	import { reports } from '$lib/state/reports.svelte';
 	import { session } from '$lib/state/session.svelte';
 	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
+	import { onboardingState } from '$lib/state/onboarding.svelte';
 
 	let { data, children } = $props();
 
@@ -24,19 +25,29 @@
 	});
 
 	/**
-	 * Гварды воронки волонтёра.
+	 * Гварды воронки.
 	 *
 	 * Порядок не случаен и повторяет правила бэкенда: сначала «кто ты», потом
-	 * «есть ли согласие», потом «пройдено ли обучение». Фронт здесь не решает,
-	 * пускать ли — он лишь ведёт человека к следующему шагу, а настоящую
-	 * проверку всё равно делает API. Дублировать правила доступа на клиенте
-	 * значит получить два расходящихся набора.
+	 * «знакомство» (онбординг), потом «есть ли согласие», потом «пройдено ли
+	 * обучение». Фронт здесь не решает, пускать ли — он лишь ведёт человека к
+	 * следующему шагу, а настоящую проверку всё равно делает API. Дублировать
+	 * правила доступа на клиенте значит получить два расходящихся набора.
 	 *
-	 * Сотрудник и координатор через эту воронку не идут вовсе — у них нет ни
-	 * курса, ни согласия, а свои разделы (`/org`, `/admin`) сами проверяют
-	 * роль в собственных layout'ах.
+	 * Онбординг — единственный шаг, о котором знает только фронт: анкета об
+	 * образовании и подобранная по OSM граница территории бэкенду пока негде
+	 * хранить (см. `api/onboarding.ts`). Поэтому «пройден» держится локально и
+	 * показывается один раз на устройство — и всегда с кнопкой «пропустить».
+	 *
+	 * Координатор через воронку не идёт вовсе: ни курса, ни согласия, ни
+	 * территории у него нет, а `/admin` проверяет роль в своём layout'е.
 	 */
-	const ALWAYS_ALLOWED = ['/course', '/consent', '/notifications'];
+	const ALWAYS_ALLOWED = ['/course', '/consent', '/notifications', '/onboarding', '/offline'];
+
+	// Анкеты лежат по id пользователя: под одним браузером в школьном классе
+	// заходят разные люди, и чужие ответы одному показывать нельзя.
+	$effect(() => {
+		if (session.profile) onboardingState.load(session.profile.id);
+	});
 
 	$effect(() => {
 		if (!session.ready) return;
@@ -45,10 +56,16 @@
 			goto(resolve('/login'), { replaceState: true });
 			return;
 		}
-		if (session.role !== 'volunteer') return;
+		if (session.isCoordinator) return;
 
 		const path = page.url.pathname;
 		if (ALWAYS_ALLOWED.some((allowed) => path.endsWith(allowed))) return;
+
+		if (!onboardingState.done) {
+			goto(resolve('/onboarding'), { replaceState: true });
+			return;
+		}
+		if (session.role !== 'volunteer') return;
 
 		if (session.needsConsent) {
 			goto(resolve('/consent'), { replaceState: true });

@@ -1,16 +1,14 @@
-import { request } from './client';
+import { request, ApiError, type Schemas } from './client';
 
 /**
- * Presigned-загрузка файлов — контракт `P0-2` из `BACKEND_TASKS.md`, ручки
- * ещё нет на бэке. Отдельно от `endpoints.ts`: тот генерируется из реального
- * `openapi.json` (`pnpm run api:types`), а этой ручки там пока нет — попадёт
- * туда сама, как только бэкендер её реализует и типы перегенерируются.
+ * Presigned PUT в объектное хранилище (P0-2).
  *
- * До появления ручки запрос отвечает 404 — вызывающий код (`offlineQueue`)
- * это ожидает и держит точку в очереди, а не падает.
+ * Контракт: `POST /uploads/presign` → `{ upload_url, public_url, headers, … }`,
+ * затем браузер сам делает PUT файла на `upload_url` с заголовками из ответа.
  */
 
-export type UploadPurpose = 'hypothesis_photo' | 'certificate' | 'consent_scan';
+export type UploadPurpose =
+	'hypothesis_photo' | 'certificate' | 'consent_scan' | 'event_photo' | 'other';
 
 export type PresignRequest = {
 	filename: string;
@@ -18,13 +16,32 @@ export type PresignRequest = {
 	purpose: UploadPurpose;
 };
 
-export type PresignResponse = {
-	upload_url: string;
-	public_url: string;
-	fields: Record<string, string>;
-	expires_at: string;
-};
+export type PresignResponse = Schemas['UploadPresignOut'];
 
 export const uploads = {
-	presign: (body: PresignRequest) => request<PresignResponse>('/api/v1/uploads/presign', { body })
+	presign: (body: PresignRequest) => request<PresignResponse>('/api/v1/uploads/presign', { body }),
+
+	/** Presign + PUT. Возвращает public_url для сохранения в доменной ручке. */
+	async putFile(file: File | Blob, purpose: UploadPurpose, filename?: string): Promise<string> {
+		const name =
+			filename ?? (file instanceof File && file.name ? file.name : `upload-${Date.now()}`);
+		const contentType =
+			(file instanceof File && file.type) || (file as Blob).type || 'application/octet-stream';
+
+		const presign = await uploads.presign({
+			filename: name,
+			content_type: contentType,
+			purpose
+		});
+
+		const response = await fetch(presign.upload_url, {
+			method: presign.method ?? 'PUT',
+			headers: presign.headers,
+			body: file
+		});
+		if (!response.ok) {
+			throw new ApiError(response.status, 'Не удалось загрузить файл');
+		}
+		return presign.public_url;
+	}
 };
