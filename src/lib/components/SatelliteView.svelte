@@ -1,12 +1,22 @@
 <script lang="ts">
-	import { MapLibre, GeoJSON, FillLayer, LineLayer, CircleLayer } from 'svelte-maplibre';
+	import {
+		MapLibre,
+		GeoJSON,
+		FillLayer,
+		LineLayer,
+		CircleLayer,
+		NavigationControl,
+		ScaleControl
+	} from 'svelte-maplibre';
 	import { MAP_STYLE } from '$lib/map/style';
-	import { centroid } from '$lib/map/features';
+	import { boundsOf } from '$lib/map/features';
 	import { STATUS_COLOR, type Report } from '$lib/types';
 
 	let { report }: { report: Report } = $props();
 
-	const center = $derived(centroid(report));
+	// Границы самой находки, а не условный zoom=15: точка и полигон площадью
+	// в гектар иначе не влезают в кадр (или тонут в нём) одинаково плохо.
+	const bounds = $derived(boundsOf(report.geometry));
 
 	const data = $derived({
 		type: 'FeatureCollection' as const,
@@ -21,13 +31,17 @@
 		<MapLibre
 			class="h-full w-full"
 			style={MAP_STYLE}
-			{center}
-			zoom={15}
+			{bounds}
+			fitBoundsOptions={{ padding: 24, animate: false }}
 			minZoom={11}
-			maxZoom={18}
+			maxZoom={19}
 			dragRotate={false}
+			pitchWithRotate={false}
 			attributionControl={{ compact: true }}
 		>
+			<NavigationControl position="bottom-right" showCompass={false} />
+			<ScaleControl position="bottom-left" />
+
 			<GeoJSON id="subject" {data}>
 				{#if report.geometry.type === 'Polygon'}
 					<FillLayer paint={{ 'fill-color': color, 'fill-opacity': 0.35 }} />

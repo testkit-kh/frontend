@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { Plus, X } from '@lucide/svelte';
+	import { hypotheses } from '$lib/api/endpoints';
+	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
 	import PollutionMap from '$lib/map/PollutionMap.svelte';
 	import ReportList from '$lib/components/ReportList.svelte';
 	import ReportDetails from '$lib/components/ReportDetails.svelte';
@@ -18,6 +20,16 @@
 
 	const isStaff = $derived(session.isStaff);
 	const authorName = $derived(session.name);
+
+	// Слой «кому принадлежит» — дополняющий, не критичный путь: пустой список
+	// при сбое не портит карту, поэтому ошибка проглатывается молча.
+	let parcels = $state<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+	$effect(() => {
+		hypotheses
+			.parcels(session.organizationId ?? undefined)
+			.then((data) => (parcels = data as GeoJSON.FeatureCollection))
+			.catch(() => {});
+	});
 
 	let picked = $state<string | null>(null);
 	const activeId = $derived(picked ?? session.organizationId ?? ALL_TERRITORIES);
@@ -105,18 +117,32 @@
 		draftArea = [];
 	}
 
-	function submit({ title, note }: { title: string; note: string }) {
+	function submit({ title, note, photo }: { title: string; note: string; photo: File | null }) {
+		const territoryId = territory?.id ?? data.territories[0].id;
+
+		if (kind === 'trash') {
+			// Реальная отправка — через офлайн-очередь (см. offlineQueue.svelte.ts):
+			// она сама решает, слать ли сейчас или ждать связи, и сама зеркалит
+			// результат в этот же мок-стор, поэтому здесь `reports.add` не нужен.
+			const [lon, lat] = draftPoint!;
+			offlineQueue.enqueue(
+				{ lat, lon, description: note || title, title, territoryId, authorName },
+				photo
+			);
+			cancelDrawing();
+			return;
+		}
+
+		// «Разлив» рисуется полигоном, а у бэкенда Hypothesis нет геометрии
+		// сложнее точки (lat/lon) — вне контракта P0-1, остаётся мок-only.
 		const report = reports.add({
-			territoryId: territory?.id ?? data.territories[0].id,
+			territoryId,
 			kind,
-			source: kind === 'trash' ? 'field' : 'satellite',
+			source: 'satellite',
 			title,
 			note,
 			author: authorName,
-			geometry:
-				kind === 'trash'
-					? { type: 'Point', coordinates: draftPoint! }
-					: { type: 'Polygon', coordinates: [[...draftArea, draftArea[0]]] }
+			geometry: { type: 'Polygon', coordinates: [[...draftArea, draftArea[0]]] }
 		});
 		cancelDrawing();
 		selectedId = report.id;
@@ -146,6 +172,7 @@
 		draft={kind === 'trash' ? (draftPoint ? [draftPoint] : []) : draftArea}
 		onmapclick={mapClick}
 		onterritory={selectTerritory}
+		{parcels}
 	/>
 </div>
 

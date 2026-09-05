@@ -5,6 +5,7 @@
 	import TopBar from '$lib/components/TopBar.svelte';
 	import { reports } from '$lib/state/reports.svelte';
 	import { session } from '$lib/state/session.svelte';
+	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
 
 	let { data, children } = $props();
 
@@ -12,6 +13,7 @@
 	$effect(() => {
 		if (hydrated) return;
 		reports.hydrate(data.reports);
+		offlineQueue.init();
 		hydrated = true;
 	});
 

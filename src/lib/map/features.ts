@@ -15,6 +15,43 @@ export function toAreas(items: Report[]) {
 	};
 }
 
+/** Точечные report'ы как GeoJSON — источник для кластеризованного слоя
+ *  (см. `PollutionMap.svelte`). Отдельно от `toAreas`: полигоны и точки
+ *  кластеризовать вместе бессмысленно, это разные типы находок. */
+export function toPoints(items: Report[]) {
+	return {
+		type: 'FeatureCollection' as const,
+		features: items
+			.filter((report) => report.geometry.type === 'Point')
+			.map((report, index) => ({
+				type: 'Feature' as const,
+				id: index,
+				properties: { id: report.id, status: report.status, kind: report.kind },
+				geometry: report.geometry as GeoJSON.Geometry
+			}))
+	};
+}
+
+/** Bounding box геометрии репорта, с отступом для точки (у точки самой по
+ *  себе нулевая площадь — без отступа `fitBounds` зумит в бесконечность). */
+export function boundsOf(geometry: Report['geometry']): [[number, number], [number, number]] {
+	if (geometry.type === 'Point') {
+		const [lng, lat] = geometry.coordinates;
+		const pad = 0.003; // ~300 м на широте средних широт — читаемый крупный план
+		return [
+			[lng - pad, lat - pad],
+			[lng + pad, lat + pad]
+		];
+	}
+	const points = geometry.coordinates[0];
+	const lngs = points.map(([lng]) => lng);
+	const lats = points.map(([, lat]) => lat);
+	return [
+		[Math.min(...lngs), Math.min(...lats)],
+		[Math.max(...lngs), Math.max(...lats)]
+	];
+}
+
 export function centroid(report: Report): [number, number] {
 	if (report.geometry.type === 'Point') return report.geometry.coordinates;
 	const points = report.geometry.coordinates[0].slice(0, -1);

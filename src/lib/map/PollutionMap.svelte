@@ -7,18 +7,26 @@
 		LineLayer,
 		MapEvents,
 		NavigationControl,
-		ScaleControl
+		Popup,
+		ScaleControl,
+		SymbolLayer
 	} from 'svelte-maplibre';
-	import type { ExpressionSpecification, Map as MapLibreMap } from 'maplibre-gl';
+	import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+	import type { LayerClickInfo } from 'svelte-maplibre';
 	import { untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import type { Report } from '$lib/types';
 	import { territoriesFeature, type Territory } from '$lib/data/territories';
 	import { healthByTerritory } from '$lib/state/health';
 	import { FIT_PADDING, MAP_STYLE, RUSSIA_BOUNDS, STATUS_MATCH, hovered } from './style';
-	import { centroid, territoryPins, toAreas } from './features';
+	import { centroid, territoryPins, toAreas, toPoints } from './features';
 	import ReportMarker from './ReportMarker.svelte';
 	import TerritoryPin from './TerritoryPin.svelte';
+
+	/** Выше этого числа точек в территории DOM-маркеры на все репорты не
+	 *  тянут — переключаемся на GeoJSON-слой с кластеризацией. Ниже —
+	 *  оставляем текущий вид (иконка по типу, бейдж мероприятия). */
+	const CLUSTER_THRESHOLD = 60;
 
 	let {
 		items,
@@ -30,7 +38,8 @@
 		drawMode = 'off',
 		draft = [],
 		onmapclick,
-		onterritory
+		onterritory,
+		parcels = { type: 'FeatureCollection', features: [] }
 	}: {
 		items: Report[];
 		territories: Territory[];
@@ -44,6 +53,8 @@
 		onmapclick?: (coordinates: [number, number]) => void;
 		/** Клик по метке территории в обзорном режиме. */
 		onterritory?: (id: string) => void;
+		/** Кадастровые участки — «кому принадлежит» (GET /api/v1/map/parcels.geojson). */
+		parcels?: GeoJSON.FeatureCollection;
 	} = $props();
 
 	const overview = $derived(activeTerritory === null);
@@ -54,6 +65,18 @@
 
 	const areas = $derived(toAreas(items));
 	const boundaries = $derived(territoriesFeature(territories));
+	const points = $derived(toPoints(items));
+	const useClusters = $derived(!overview && items.length > CLUSTER_THRESHOLD);
+
+	function expandCluster(event: LayerClickInfo) {
+		const clusterId = Number(event.clusterId);
+		if (!map || Number.isNaN(clusterId)) return;
+		const source = map.getSource('points') as GeoJSONSource | undefined;
+		const lngLat = event.event.lngLat;
+		source?.getClusterExpansionZoom(clusterId).then((zoom) => {
+			map?.easeTo({ center: lngLat, zoom });
+		});
+	}
 
 	const routeData = $derived({
 		type: 'FeatureCollection' as const,
@@ -167,6 +190,26 @@
 		/>
 	</GeoJSON>
 
+	<!-- Кадастровые участки — «кому принадлежит», отдельно от собственных
+	     полигонов-находок (areas): один описывает территорию владения, другой —
+	     то, что на ней нашли, путать их в одном слое нельзя. -->
+	<GeoJSON id="parcels" data={parcels}>
+		<FillLayer hoverCursor="pointer" paint={{ 'fill-color': '#a855f7', 'fill-opacity': 0.18 }}>
+			<Popup openOn="click" closeOnClickOutside>
+				{#snippet children({ data })}
+					{@const props = (data?.properties ?? {}) as { name?: string; description?: string }}
+					<div class="max-w-64 text-xs">
+						<p class="font-medium text-slate-900">{props.name ?? 'Кадастровый участок'}</p>
+						{#if props.description}
+							<p class="mt-1 text-slate-600">{props.description}</p>
+						{/if}
+					</div>
+				{/snippet}
+			</Popup>
+		</FillLayer>
+		<LineLayer paint={{ 'line-color': '#a855f7', 'line-width': 1.4, 'line-opacity': 0.6 }} />
+	</GeoJSON>
+
 	<GeoJSON id="areas" data={areas}>
 		<FillLayer
 			manageHoverState
@@ -209,6 +252,44 @@
 				onselect={() => onterritory?.(pin.properties.id)}
 			/>
 		{/each}
+	{:else if useClusters}
+		<!-- На большом числе точек DOM-маркеры на каждую тормозят и сливаются
+		     в кашу — переключаемся на кластеризованный GeoJSON-слой. -->
+		<GeoJSON id="points" data={points} cluster={{ radius: 50, maxZoom: 14 }}>
+			<CircleLayer
+				filter={['has', 'point_count']}
+				hoverCursor="pointer"
+				paint={{
+					'circle-color': '#0f172a',
+					'circle-opacity': 0.85,
+					'circle-radius': ['step', ['get', 'point_count'], 16, 25, 20, 100, 26],
+					'circle-stroke-color': '#ffffff',
+					'circle-stroke-width': 2
+				}}
+				onclick={expandCluster}
+			/>
+			<SymbolLayer
+				filter={['has', 'point_count']}
+				layout={{
+					'text-field': ['get', 'point_count_abbreviated'],
+					'text-size': 12,
+					'text-font': ['Noto Sans Bold']
+				}}
+				paint={{ 'text-color': '#ffffff' }}
+			/>
+			<CircleLayer
+				filter={['!', ['has', 'point_count']]}
+				manageHoverState
+				hoverCursor="pointer"
+				paint={{
+					'circle-color': STATUS_MATCH,
+					'circle-radius': ['case', isSelected, 9, 6],
+					'circle-stroke-color': '#ffffff',
+					'circle-stroke-width': 2
+				}}
+				onclick={(event) => pick(event.features?.[0]?.properties?.id)}
+			/>
+		</GeoJSON>
 	{:else}
 		{#each items as report (report.id)}
 			<ReportMarker {report} selected={report.id === selectedId} onselect={(id) => pick(id)} />

@@ -1,8 +1,18 @@
 <script lang="ts">
-	import { CircleCheck, CircleDashed, Clock, ExternalLink, TriangleAlert } from '@lucide/svelte';
+	import {
+		CircleCheck,
+		CircleDashed,
+		Clock,
+		Download,
+		ExternalLink,
+		Share2,
+		TriangleAlert
+	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { ApiError } from '$lib/api/client';
+	import { certificates, type CertificateInfo } from '$lib/api/certificates';
 	import { course, type CourseStatus } from '$lib/api/endpoints';
 	import Logo from '$lib/components/Logo.svelte';
 	import { session } from '$lib/state/session.svelte';
@@ -27,6 +37,36 @@
 
 	let redirecting = $state(false);
 	let redirectError = $state<string | null>(null);
+
+	// Ручки сертификата ещё нет на бэке (см. certificates.ts) — 404 просто
+	// не показывает блок, а не роняет страницу.
+	let certificate = $state<CertificateInfo | null>(null);
+	let shareNote = $state<string | null>(null);
+
+	$effect(() => {
+		if (status?.certificate_status !== 'approved') return;
+		certificates
+			.mine()
+			.then((info) => (certificate = info))
+			.catch(() => {});
+	});
+
+	async function shareCertificate() {
+		if (!certificate) return;
+		const url = `${page.url.origin}${resolve('/verify/[code]', { code: certificate.code })}`;
+		try {
+			await certificates.share(certificate.code);
+		} catch {
+			/* событие certificate_shared не критично для самого шеринга */
+		}
+		if (navigator.share) {
+			await navigator.share({ title: 'Мой сертификат «Чистого берега»', url }).catch(() => {});
+			return;
+		}
+		await navigator.clipboard.writeText(url).catch(() => {});
+		shareNote = 'Ссылка скопирована';
+		setTimeout(() => (shareNote = null), 3000);
+	}
 
 	async function goToCourse() {
 		if (redirecting) return;
@@ -237,6 +277,40 @@
 						{submitting ? 'Отправляем…' : 'Отправить на проверку'}
 					</button>
 				</form>
+			{/if}
+
+			{#if status.certificate_status === 'approved' && certificate}
+				<div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+					<div>
+						<p class="text-sm font-medium text-slate-900">Сертификат №{certificate.code}</p>
+						<p class="mt-0.5 text-xs text-slate-500">
+							Выдан {new Date(certificate.issued_at).toLocaleDateString('ru-RU')}
+						</p>
+					</div>
+					<div class="flex flex-wrap gap-2">
+						<!-- pdf_url приходит с бэка (S3/presigned), не роут приложения. -->
+						<!-- eslint-disable svelte/no-navigation-without-resolve -->
+						<a
+							href={certificate.pdf_url}
+							target="_blank"
+							rel="noreferrer"
+							class="flex min-h-11 items-center gap-2 rounded-full border border-slate-300 px-4 text-sm font-medium text-slate-900 hover:bg-slate-50"
+						>
+							<Download size={16} /> Скачать PDF
+						</a>
+						<!-- eslint-enable svelte/no-navigation-without-resolve -->
+						<button
+							type="button"
+							onclick={shareCertificate}
+							class="flex min-h-11 items-center gap-2 rounded-full border border-slate-300 px-4 text-sm font-medium text-slate-900 hover:bg-slate-50"
+						>
+							<Share2 size={16} /> Поделиться
+						</button>
+						{#if shareNote}
+							<span class="flex items-center text-xs text-slate-500">{shareNote}</span>
+						{/if}
+					</div>
+				</div>
 			{/if}
 
 			{#if status.has_map_access}
