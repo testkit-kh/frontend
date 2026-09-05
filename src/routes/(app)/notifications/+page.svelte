@@ -60,7 +60,9 @@
 	}
 
 	function isCourseReminder(notification: Notification): boolean {
-		return notification.kind === 'course_not_started' || notification.kind === 'course_not_finished';
+		return (
+			notification.kind === 'course_not_started' || notification.kind === 'course_not_finished'
+		);
 	}
 
 	/** Куда ведёт уведомление. Напоминание о курсе переходит через клик
