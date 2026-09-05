@@ -65,7 +65,7 @@ export const course = {
 	 * считается вся метрика возврата.
 	 */
 	redirectUrl: (notificationId?: string) =>
-		`${import.meta.env.VITE_API_URL ?? '/api-proxy'}/api/v1/course/redirect` +
+		`${import.meta.env.VITE_API_URL ?? ''}/api/v1/course/redirect` +
 		(notificationId ? `?nid=${encodeURIComponent(notificationId)}` : ''),
 
 	submitCertificate: (certificateUrl: string) =>

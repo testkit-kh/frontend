@@ -26,8 +26,10 @@ export type Schemas = components['schemas'];
 
 const TOKEN_KEY = 'kosmo.token';
 
-/** Базовый адрес API. В деве — прокси Vite, в проде задаётся при сборке. */
-const BASE = import.meta.env.VITE_API_URL ?? '/api-proxy';
+/** Базовый адрес API. По умолчанию — пусто: те же пути (/auth, /api), что
+ *  знает и дев-прокси Vite, и прод-Caddy. VITE_API_URL нужен только если API
+ *  вынесен на отдельный домен. */
+const BASE = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiError extends Error {
 	constructor(
