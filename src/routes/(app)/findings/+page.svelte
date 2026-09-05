@@ -47,6 +47,7 @@
 			goto(resolve('/map'));
 			return;
 		}
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query после resolve('/map')
 		goto(`${resolve('/map')}?lat=${lat}&lon=${lon}`);
 	}
 </script>
