@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { BellOff, CheckCheck, TriangleAlert } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { ApiError } from '$lib/api/client';
 	import { course, notifications as api, type Notification } from '$lib/api/endpoints';
 	import { formatDate } from '$lib/format';
@@ -58,12 +59,36 @@
 		}
 	}
 
-	/** Куда ведёт уведомление. Для напоминания о курсе — через бэкенд с `nid`. */
+	function isCourseReminder(notification: Notification): boolean {
+		return notification.kind === 'course_not_started' || notification.kind === 'course_not_finished';
+	}
+
+	/** Куда ведёт уведомление. Напоминание о курсе переходит через клик
+	 *  (см. `open`) — href здесь лишь запасной путь для открытия в новой
+	 *  вкладке и для скринридеров. */
 	function linkFor(notification: Notification): string {
-		if (notification.kind === 'course_not_started' || notification.kind === 'course_not_finished') {
-			return course.redirectUrl(notification.id);
-		}
+		if (isCourseReminder(notification)) return resolve('/course');
 		return notification.action_url ?? '/map';
+	}
+
+	let redirecting = $state(false);
+
+	/** Клик по напоминанию о курсе: адрес курса известен только после
+	 *  авторизованного запроса (обычная навигация браузера токен не шлёт),
+	 *  а `nid` в запросе фиксирует `reminder_clicked` на бэкенде. */
+	async function open(notification: Notification, event: MouseEvent) {
+		markRead(notification);
+		if (!isCourseReminder(notification)) return;
+		event.preventDefault();
+		if (redirecting) return;
+		redirecting = true;
+		try {
+			const { url } = await course.redirect(notification.id);
+			window.location.href = url;
+		} catch (cause) {
+			error = cause instanceof ApiError ? cause.message : 'Не удалось перейти к курсу';
+			redirecting = false;
+		}
 	}
 
 	const hasUnread = $derived(items.some((item) => !item.read_at));
@@ -109,12 +134,12 @@
 			<ul class="flex flex-col gap-2">
 				{#each items as notification (notification.id)}
 					<li>
-						<!-- Адрес приходит с сервера и для напоминаний о курсе указывает на
-						     ручку API, а не на роут приложения: resolve() к нему неприменим. -->
-						<!-- eslint-disable svelte/no-navigation-without-resolve -->
+						<!-- Для остальных уведомлений адрес — action_url с сервера, а не
+						     известный на этапе сборки роут: resolve() к нему неприменим. -->
+						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 						<a
 							href={linkFor(notification)}
-							onclick={() => markRead(notification)}
+							onclick={(event) => open(notification, event)}
 							class="flex gap-3 rounded-lg border p-4 transition-colors {notification.read_at
 								? 'border-slate-200 bg-white'
 								: 'border-sky-200 bg-sky-50'}"
@@ -136,7 +161,6 @@
 								</p>
 							</div>
 						</a>
-						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					</li>
 				{/each}
 			</ul>

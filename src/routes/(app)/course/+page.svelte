@@ -25,6 +25,22 @@
 	let submitting = $state(false);
 	let submitError = $state<string | null>(null);
 
+	let redirecting = $state(false);
+	let redirectError = $state<string | null>(null);
+
+	async function goToCourse() {
+		if (redirecting) return;
+		redirecting = true;
+		redirectError = null;
+		try {
+			const { url } = await course.redirect();
+			window.location.href = url;
+		} catch (cause) {
+			redirectError = cause instanceof ApiError ? cause.message : 'Не удалось перейти к курсу';
+			redirecting = false;
+		}
+	}
+
 	async function load() {
 		loading = true;
 		error = null;
@@ -167,19 +183,26 @@
 				</div>
 			{/if}
 
-			<!-- Ссылка ведёт через наш бэкенд, а не прямо на iSpring: только так
+			<!-- Переход идёт через наш бэкенд, а не прямо на iSpring: только так
 			     фиксируется переход, от которого считается вся метрика возврата.
-			     resolve() здесь неприменим — это ручка API, а не роут приложения. -->
-			<!-- eslint-disable svelte/no-navigation-without-resolve -->
-			<a
-				href={course.redirectUrl()}
-				rel="noreferrer"
-				class="flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-700"
+			     Кнопка, а не ссылка: адрес курса известен только после
+			     авторизованного запроса. -->
+			<button
+				type="button"
+				onclick={goToCourse}
+				disabled={redirecting}
+				class="flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-700 disabled:bg-slate-400"
 			>
-				{status.course_redirect_at ? 'Продолжить обучение' : 'Перейти к курсу'}
+				{redirecting
+					? 'Переходим…'
+					: status.course_redirect_at
+						? 'Продолжить обучение'
+						: 'Перейти к курсу'}
 				<ExternalLink size={16} />
-			</a>
-			<!-- eslint-enable svelte/no-navigation-without-resolve -->
+			</button>
+			{#if redirectError}
+				<p class="text-xs text-red-700">{redirectError}</p>
+			{/if}
 
 			{#if status.certificate_status === 'pending'}
 				<p class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">

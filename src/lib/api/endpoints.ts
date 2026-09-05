@@ -60,13 +60,16 @@ export const course = {
 	status: () => request<CourseStatus>('/api/v1/course/me'),
 
 	/**
-	 * Ссылка на курс. Переход делается через наш бэкенд, а не прямо на
-	 * iSpring: только так фиксируется `course_redirect_click`, от которого
-	 * считается вся метрика возврата.
+	 * Уйти на курс. Переход идёт через наш бэкенд, а не прямо на iSpring:
+	 * только так фиксируется `course_redirect_click`, от которого считается
+	 * вся метрика возврата. JSON, а не HTTP-редирект: ручка требует
+	 * Bearer-токен, а обычный `<a href>` заголовков не шлёт — поэтому здесь
+	 * авторизованный fetch, а переход по `url` делает вызывающий код сам.
 	 */
-	redirectUrl: (notificationId?: string) =>
-		`${import.meta.env.VITE_API_URL ?? ''}/api/v1/course/redirect` +
-		(notificationId ? `?nid=${encodeURIComponent(notificationId)}` : ''),
+	redirect: (notificationId?: string) =>
+		request<{ url: string }>('/api/v1/course/redirect', {
+			query: { nid: notificationId }
+		}),
 
 	submitCertificate: (certificateUrl: string) =>
 		request<Schemas['VolunteerProfileOut']>('/api/v1/volunteers/me/certificate', {
