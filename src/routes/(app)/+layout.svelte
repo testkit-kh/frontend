@@ -24,24 +24,30 @@
 	});
 
 	/**
-	 * Гварды воронки.
+	 * Гварды воронки волонтёра.
 	 *
 	 * Порядок не случаен и повторяет правила бэкенда: сначала «кто ты», потом
 	 * «есть ли согласие», потом «пройдено ли обучение». Фронт здесь не решает,
 	 * пускать ли — он лишь ведёт человека к следующему шагу, а настоящую
 	 * проверку всё равно делает API. Дублировать правила доступа на клиенте
 	 * значит получить два расходящихся набора.
+	 *
+	 * Сотрудник и координатор через эту воронку не идут вовсе — у них нет ни
+	 * курса, ни согласия, а свои разделы (`/org`, `/admin`) сами проверяют
+	 * роль в собственных layout'ах.
 	 */
 	const ALWAYS_ALLOWED = ['/course', '/consent', '/notifications'];
 
 	$effect(() => {
 		if (!session.ready) return;
 
-		const path = page.url.pathname;
 		if (!session.profile) {
 			goto(resolve('/login'), { replaceState: true });
 			return;
 		}
+		if (session.role !== 'volunteer') return;
+
+		const path = page.url.pathname;
 		if (ALWAYS_ALLOWED.some((allowed) => path.endsWith(allowed))) return;
 
 		if (session.needsConsent) {

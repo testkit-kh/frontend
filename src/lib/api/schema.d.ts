@@ -81,7 +81,7 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
-		/** Create a new ecological observation (hypothesis) */
+		/** Создать гипотезу (экологическое наблюдение) */
 		post: operations['create_hypothesis_api_v1_hypotheses_post'];
 		delete?: never;
 		options?: never;
@@ -123,6 +123,35 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/api/v1/hypotheses/my': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Мои точки: статус, описание и причина отказа
+		 * @description Личная лента автора точек.
+		 *
+		 *     Смысл ручки — обратная связь: человек отправил точку и должен видеть,
+		 *     что с ней стало. Поэтому отдаются все статусы, включая rejected с
+		 *     причиной: молчаливый отказ — главная причина, по которой волонтёр не
+		 *     присылает вторую точку.
+		 *
+		 *     Offset-пагинация, а не курсор: лента своя, короткая и отсортирована по
+		 *     дате создания, которая не меняется — сдвига страниц, из-за которого
+		 *     курсоры и нужны, здесь не возникает.
+		 */
+		get: operations['list_my_hypotheses_api_v1_hypotheses_my_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/api/v1/map/layers': {
 		parameters: {
 			query?: never;
@@ -134,6 +163,97 @@ export interface paths {
 		get: operations['get_map_layers_api_v1_map_layers_get'];
 		put?: never;
 		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/v1/events': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Список мероприятий (своя ООПТ для сотрудника, planned для волонтёра)
+		 * @description Одна ручка на две роли, но с разной выборкой.
+		 *
+		 *     Сотрудник ведёт свои мероприятия — видит все статусы своей ООПТ.
+		 *     Волонтёр выбирает, куда поехать — видит только запланированные и по
+		 *     всем территориям: человек из Петропавловска может поехать и в
+		 *     Кроноцкий, и в Южно-Камчатский.
+		 */
+		get: operations['list_events_api_v1_events_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/v1/events/{event_id}/join': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Записаться на мероприятие (волонтёр, идемпотентно) */
+		post: operations['join_event_api_v1_events__event_id__join_post'];
+		/**
+		 * Отменить запись на мероприятие (волонтёр)
+		 * @description Отмена записи.
+		 *
+		 *     Идемпотентна так же, как и запись: 204 и в случае, когда записи не
+		 *     было. Клиент хочет получить состояние «я не участвую», и оно
+		 *     достигнуто.
+		 */
+		delete: operations['leave_event_api_v1_events__event_id__join_delete'];
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/v1/events/{event_id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		/** Обновить дату, место и описание мероприятия (сотрудник ООПТ) */
+		patch: operations['update_event_api_v1_events__event_id__patch'];
+		trace?: never;
+	};
+	'/api/v1/events/{event_id}/complete': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Закрыть мероприятие с итогами уборки (сотрудник ООПТ)
+		 * @description Закрытие мероприятия — момент, когда точка становится убранной.
+		 *
+		 *     Гипотеза переводится в ``cleaned`` здесь, а не отдельным вызовом: два
+		 *     запроса означали бы состояние «мероприятие закрыто, а точка на карте
+		 *     всё ещё грязная», и рано или поздно система в нём бы и застряла.
+		 */
+		post: operations['complete_event_api_v1_events__event_id__complete_post'];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -580,6 +700,58 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/api/v1/organizations/me': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Профиль своей организации (сотрудник ООПТ) */
+		get: operations['get_my_organization_api_v1_organizations_me_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		/** Обновить контактные данные своей организации (сотрудник ООПТ) */
+		patch: operations['update_my_organization_api_v1_organizations_me_patch'];
+		trace?: never;
+	};
+	'/api/v1/organizations': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Список организаций для верификации (координатор) */
+		get: operations['list_organizations_api_v1_organizations_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/api/v1/organizations/{organization_id}/verify': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Ручной вердикт по верификации организации (координатор) */
+		post: operations['verify_organization_api_v1_organizations__organization_id__verify_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/': {
 		parameters: {
 			query?: never;
@@ -685,7 +857,10 @@ export interface components {
 			grant_type?: string | null;
 			/** Username */
 			username: string;
-			/** Password */
+			/**
+			 * Password
+			 * Format: password
+			 */
 			password: string;
 			/**
 			 * Scope
@@ -694,7 +869,10 @@ export interface components {
 			scope: string;
 			/** Client Id */
 			client_id?: string | null;
-			/** Client Secret */
+			/**
+			 * Client Secret
+			 * Format: password
+			 */
 			client_secret?: string | null;
 		};
 		/** CadastralParcelCreateRequest */
@@ -806,6 +984,41 @@ export interface components {
 		 */
 		ConsentStatus: 'not_required' | 'awaiting' | 'approved' | 'rejected';
 		/**
+		 * CoordinatorProfile
+		 * @description Координатор программы со стороны Фонда.
+		 *
+		 *     Кроме базовых полей пользователя добавить нечего: координатор не
+		 *     привязан к организации и не проходит курс/согласие — это программная
+		 *     роль, а не территориальная и не волонтёрская.
+		 */
+		CoordinatorProfile: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			/** Email */
+			email: string;
+			/** Full Name */
+			full_name: string;
+			role: components['schemas']['UserRole'];
+			/**
+			 * Created At
+			 * Format: date-time
+			 */
+			created_at: string;
+		};
+		/**
+		 * CourseRedirectOut
+		 * @description Куда идти дальше. JSON, а не HTTP-редирект: ручка требует Bearer-токен,
+		 *     а обычная навигация браузера (клик по `<a href>`) заголовков не шлёт —
+		 *     поэтому фронт делает авторизованный запрос сюда и сам переходит по url.
+		 */
+		CourseRedirectOut: {
+			/** Url */
+			url: string;
+		};
+		/**
 		 * CourseStatusOut
 		 * @description Один экран «где я на пути обучения» — чтобы фронт не собирал его из
 		 *     трёх разных ручек.
@@ -847,6 +1060,180 @@ export interface components {
 			expires_in: number;
 			/** Scoped To Organization */
 			scoped_to_organization: boolean;
+		};
+		/**
+		 * EventCompleteRequest
+		 * @description Итоги уборки.
+		 *
+		 *     Объём или масса — хотя бы одно: без них закрытие мероприятия не даёт
+		 *     проекту ничего, а именно эти числа идут в отчётность по вывезенному
+		 *     мусору.
+		 */
+		EventCompleteRequest: {
+			/**
+			 * Actual Participants
+			 * @description Сколько человек реально пришло
+			 */
+			actual_participants: number;
+			/**
+			 * Waste Volume M3
+			 * @description Объём собранного мусора, м³
+			 */
+			waste_volume_m3?: number | null;
+			/**
+			 * Waste Mass Kg
+			 * @description Масса собранного мусора, кг
+			 */
+			waste_mass_kg?: number | null;
+			/** Result Notes */
+			result_notes?: string | null;
+			/**
+			 * Completed At
+			 * @description Фактическое время окончания; по умолчанию — сейчас
+			 */
+			completed_at?: string | null;
+			/**
+			 * Attended User Ids
+			 * @description Участники, отмеченные как пришедшие
+			 */
+			attended_user_ids?: string[] | null;
+		};
+		/**
+		 * EventCompleteResponse
+		 * @description Ответ закрытия мероприятия.
+		 *
+		 *     Статус гипотезы возвращается явно: смена точки на cleaned — побочный
+		 *     эффект этого вызова, и клиент должен видеть, что он произошёл, не
+		 *     перезапрашивая точку.
+		 */
+		EventCompleteResponse: {
+			event: components['schemas']['EventOut'];
+			/**
+			 * Hypothesis Id
+			 * Format: uuid
+			 */
+			hypothesis_id: string;
+			hypothesis_status: components['schemas']['HypothesisStatus'];
+			/**
+			 * Attendance Marked
+			 * @default 0
+			 */
+			attendance_marked: number;
+		};
+		/** EventJoinOut */
+		EventJoinOut: {
+			/**
+			 * Event Id
+			 * Format: uuid
+			 */
+			event_id: string;
+			/**
+			 * User Id
+			 * Format: uuid
+			 */
+			user_id: string;
+			/**
+			 * Joined At
+			 * Format: date-time
+			 */
+			joined_at: string;
+			/** Attended */
+			attended: boolean;
+			/**
+			 * Already Joined
+			 * @default false
+			 */
+			already_joined: boolean;
+		};
+		/** EventListOut */
+		EventListOut: {
+			/** Items */
+			items: components['schemas']['EventOut'][];
+			/** Total */
+			total: number;
+			/** Limit */
+			limit: number;
+			/** Offset */
+			offset: number;
+		};
+		/** EventOut */
+		EventOut: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			/**
+			 * Hypothesis Id
+			 * Format: uuid
+			 */
+			hypothesis_id: string;
+			/**
+			 * Organization Id
+			 * Format: uuid
+			 */
+			organization_id: string;
+			/** Title */
+			title: string;
+			/** Description */
+			description?: string | null;
+			/** Place */
+			place?: string | null;
+			/** Scheduled At */
+			scheduled_at?: string | null;
+			status: components['schemas']['EventStatus'];
+			/**
+			 * Participants Count
+			 * @default 0
+			 */
+			participants_count: number;
+			/**
+			 * Is Joined
+			 * @default false
+			 */
+			is_joined: boolean;
+			/** Completed At */
+			completed_at?: string | null;
+			/** Actual Participants */
+			actual_participants?: number | null;
+			/** Waste Volume M3 */
+			waste_volume_m3?: number | null;
+			/** Waste Mass Kg */
+			waste_mass_kg?: number | null;
+			/** Result Notes */
+			result_notes?: string | null;
+			/**
+			 * Created At
+			 * Format: date-time
+			 */
+			created_at: string;
+			/**
+			 * Updated At
+			 * Format: date-time
+			 */
+			updated_at: string;
+		};
+		/**
+		 * EventStatus
+		 * @description Lifecycle of a field event.
+		 * @enum {string}
+		 */
+		EventStatus: 'planned' | 'in_progress' | 'completed' | 'cancelled';
+		/**
+		 * EventUpdateRequest
+		 * @description PATCH-семантика: применяются только переданные поля.
+		 *
+		 *     Не переданное поле и переданный null — разные вещи (не трогать против
+		 *     «стереть»), поэтому обработчик смотрит на model_fields_set, а не на
+		 *     None.
+		 */
+		EventUpdateRequest: {
+			/** Scheduled At */
+			scheduled_at?: string | null;
+			/** Place */
+			place?: string | null;
+			/** Description */
+			description?: string | null;
 		};
 		/** GeoJSONFeature */
 		GeoJSONFeature: {
@@ -893,18 +1280,29 @@ export interface components {
 			/** Detail */
 			detail?: components['schemas']['ValidationError'][];
 		};
-		/** HypothesisCreateRequest */
+		/**
+		 * HypothesisCreateRequest
+		 * @description Создание гипотезы.
+		 *
+		 *     Поддерживает два формата ввода геометрии:
+		 *     - Устаревший: lat + lon (обратная совместимость).
+		 *     - Новый: geometry (GeoJSON Feature или Geometry).
+		 *     Если передано geometry — lat/lon извлекаются из centroid'а
+		 *     на сервере; если только lat/lon — geometry не обязателен.
+		 */
 		HypothesisCreateRequest: {
+			/** @description GeoJSON Geometry: Point или Polygon. При передаче lat/lon можно опустить. */
+			geometry?: components['schemas']['GeoJSONGeometry'] | null;
 			/**
 			 * Lat
-			 * @description Latitude (WGS-84)
+			 * @description Latitude (WGS-84). Обязателен без geometry.
 			 */
-			lat: number;
+			lat?: number | null;
 			/**
 			 * Lon
-			 * @description Longitude (WGS-84)
+			 * @description Longitude (WGS-84). Обязателен без geometry.
 			 */
-			lon: number;
+			lon?: number | null;
 			/** Description */
 			description: string;
 			/** Photo Url */
@@ -915,6 +1313,16 @@ export interface components {
 			 * @description Если точка — очередной замер на площадке многолетних наблюдений
 			 */
 			monitoring_site_id?: string | null;
+			/**
+			 * Client Id
+			 * @description Идемпотентный ключ от клиента
+			 */
+			client_id?: string | null;
+			/**
+			 * Created At Client
+			 * @description Время создания на устройстве. Для определения offline-режима.
+			 */
+			created_at_client?: string | null;
 		};
 		/** HypothesisOut */
 		HypothesisOut: {
@@ -939,6 +1347,12 @@ export interface components {
 			/** Photo Url */
 			photo_url: string | null;
 			status: components['schemas']['HypothesisStatus'];
+			/** Reject Reason */
+			reject_reason?: string | null;
+			/** Client Id */
+			client_id?: string | null;
+			/** Created At Client */
+			created_at_client?: string | null;
 			/** Trash Categories */
 			trash_categories?: string[] | null;
 			dominant_category?: components['schemas']['TrashCategory'] | null;
@@ -976,11 +1390,16 @@ export interface components {
 		 * @description Lifecycle of a volunteer-submitted hypothesis.
 		 * @enum {string}
 		 */
-		HypothesisStatus: 'pending' | 'approved' | 'rejected' | 'drone_requested';
+		HypothesisStatus: 'pending' | 'approved' | 'rejected' | 'drone_requested' | 'cleaned';
 		/** HypothesisValidateRequest */
 		HypothesisValidateRequest: {
-			/** @description New status for the hypothesis */
+			/** @description Новый статус гипотезы */
 			status: components['schemas']['HypothesisStatus'];
+			/**
+			 * Reason
+			 * @description Причина отказа. Обязательна при rejected — волонтёр видит её в ленте «Мои точки»
+			 */
+			reason?: string | null;
 		};
 		/** HypothesisValidateResponse */
 		HypothesisValidateResponse: {
@@ -1053,6 +1472,66 @@ export interface components {
 			last_surveyed_at?: string | null;
 		};
 		/**
+		 * MyHypothesesListOut
+		 * @description Страница ленты.
+		 *
+		 *     `total` считается отдельным запросом: с limit длина items ничего не
+		 *     говорит о размере ленты, а клиенту нужно знать, есть ли что листать.
+		 */
+		MyHypothesesListOut: {
+			/** Items */
+			items: components['schemas']['MyHypothesisOut'][];
+			/** Total */
+			total: number;
+			/** Limit */
+			limit: number;
+			/** Offset */
+			offset: number;
+		};
+		/**
+		 * MyHypothesisOut
+		 * @description Одна точка в личной ленте волонтёра.
+		 *
+		 *     Урезанная проекция HypothesisOut: смета и коэффициенты — рабочие данные
+		 *     ООПТ, автору точки они не нужны. Зато нужны причина отказа и судьба
+		 *     точки: попала ли она в мероприятие и когда его уберут.
+		 */
+		MyHypothesisOut: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			status: components['schemas']['HypothesisStatus'];
+			/** Description */
+			description: string;
+			/** Reject Reason */
+			reject_reason?: string | null;
+			/** Lat */
+			lat: number;
+			/** Lon */
+			lon: number;
+			/** Photo Url */
+			photo_url?: string | null;
+			/** Organization Id */
+			organization_id?: string | null;
+			/** Event Id */
+			event_id?: string | null;
+			event_status?: components['schemas']['EventStatus'] | null;
+			/** Event Scheduled At */
+			event_scheduled_at?: string | null;
+			/**
+			 * Created At
+			 * Format: date-time
+			 */
+			created_at: string;
+			/**
+			 * Updated At
+			 * Format: date-time
+			 */
+			updated_at: string;
+		};
+		/**
 		 * NotificationKind
 		 * @description Типы уведомлений. Строкой в БД не делаем: список закрытый и короткий,
 		 *     а опечатка в типе сломала бы и фильтрацию, и KPI по напоминаниям.
@@ -1109,6 +1588,26 @@ export interface components {
 		 * @enum {string}
 		 */
 		OrgVerificationStatus: 'pending' | 'verified' | 'failed' | 'manual_review';
+		/** OrganizationListItemOut */
+		OrganizationListItemOut: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			/** Name */
+			name: string;
+			/** Inn */
+			inn: string;
+			/** Cadastral Number */
+			cadastral_number: string | null;
+			verification_status: components['schemas']['OrgVerificationStatus'];
+			/**
+			 * Created At
+			 * Format: date-time
+			 */
+			created_at: string;
+		};
 		/** OrganizationOut */
 		OrganizationOut: {
 			/**
@@ -1129,6 +1628,51 @@ export interface components {
 			 */
 			created_at: string;
 		};
+		/**
+		 * OrganizationProfileOut
+		 * @description Профиль организации для кабинета сотрудника ООПТ.
+		 *
+		 *     Расширяет OrganizationOut списком сотрудников и счётчиками участков /
+		 *     площадок наблюдений — то, с чего сотрудник обычно начинает работу в
+		 *     кабинете, не переходя на другие вкладки.
+		 */
+		OrganizationProfileOut: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			/** Name */
+			name: string;
+			/** Inn */
+			inn: string;
+			/** Cadastral Number */
+			cadastral_number: string | null;
+			verification_status: components['schemas']['OrgVerificationStatus'];
+			/**
+			 * Created At
+			 * Format: date-time
+			 */
+			created_at: string;
+			/** Contact Email */
+			contact_email?: string | null;
+			/** Contact Phone */
+			contact_phone?: string | null;
+			/** Description */
+			description?: string | null;
+			/** Staff Members */
+			staff_members?: components['schemas']['StaffMemberOut'][];
+			/**
+			 * Parcels Count
+			 * @default 0
+			 */
+			parcels_count: number;
+			/**
+			 * Monitoring Sites Count
+			 * @default 0
+			 */
+			monitoring_sites_count: number;
+		};
 		/** OrganizationRegisterRequest */
 		OrganizationRegisterRequest: {
 			/** Org Name */
@@ -1146,6 +1690,31 @@ export interface components {
 			password: string;
 			/** Full Name */
 			full_name: string;
+		};
+		/**
+		 * OrganizationUpdateRequest
+		 * @description PATCH-семантика: применяются только переданные поля.
+		 *
+		 *     Название и ИНН сюда не входят — они канонические, взяты из ЕГРЮЛ при
+		 *     регистрации, и правка руками означала бы разойтись с реестром.
+		 */
+		OrganizationUpdateRequest: {
+			/** Contact Email */
+			contact_email?: string | null;
+			/** Contact Phone */
+			contact_phone?: string | null;
+			/** Description */
+			description?: string | null;
+		};
+		/** OrganizationVerifyRequest */
+		OrganizationVerifyRequest: {
+			/** Approved */
+			approved: boolean;
+			/**
+			 * Reason
+			 * @description Обязательна при отказе — организация должна понимать, что исправить
+			 */
+			reason?: string | null;
 		};
 		/**
 		 * ParcelGeometryRequest
@@ -1334,6 +1903,18 @@ export interface components {
 			 */
 			created_at: string;
 		};
+		/** StaffMemberOut */
+		StaffMemberOut: {
+			/**
+			 * Id
+			 * Format: uuid
+			 */
+			id: string;
+			/** Full Name */
+			full_name: string;
+			/** Email */
+			email: string;
+		};
 		/** StaffProfile */
 		StaffProfile: {
 			/**
@@ -1424,6 +2005,10 @@ export interface components {
 			msg: string;
 			/** Error Type */
 			type: string;
+			/** Input */
+			input?: unknown;
+			/** Context */
+			ctx?: Record<string, never>;
 		};
 		/** VolunteerProfile */
 		VolunteerProfile: {
@@ -1637,7 +2222,9 @@ export interface operations {
 				};
 				content: {
 					'application/json':
-						components['schemas']['VolunteerProfile'] | components['schemas']['StaffProfile'];
+						| components['schemas']['VolunteerProfile']
+						| components['schemas']['StaffProfile']
+						| components['schemas']['CoordinatorProfile'];
 				};
 			};
 		};
@@ -1730,6 +2317,40 @@ export interface operations {
 			};
 		};
 	};
+	list_my_hypotheses_api_v1_hypotheses_my_get: {
+		parameters: {
+			query?: {
+				/** @description Фильтр по статусу точки */
+				status?: components['schemas']['HypothesisStatus'] | null;
+				limit?: number;
+				offset?: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['MyHypothesesListOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
 	get_map_layers_api_v1_map_layers_get: {
 		parameters: {
 			query?: never;
@@ -1746,6 +2367,170 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['GeoJSONFeatureCollection'];
+				};
+			};
+		};
+	};
+	list_events_api_v1_events_get: {
+		parameters: {
+			query?: {
+				/** @description Фильтр по статусу; для волонтёра игнорируется */
+				status?: components['schemas']['EventStatus'] | null;
+				limit?: number;
+				offset?: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['EventListOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	join_event_api_v1_events__event_id__join_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				event_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			201: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['EventJoinOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	leave_event_api_v1_events__event_id__join_delete: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				event_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			204: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	update_event_api_v1_events__event_id__patch: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				event_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['EventUpdateRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['EventOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	complete_event_api_v1_events__event_id__complete_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				event_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['EventCompleteRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['EventCompleteResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
 				};
 			};
 		};
@@ -1913,11 +2698,13 @@ export interface operations {
 		requestBody?: never;
 		responses: {
 			/** @description Successful Response */
-			307: {
+			200: {
 				headers: {
 					[name: string]: unknown;
 				};
-				content?: never;
+				content: {
+					'application/json': components['schemas']['CourseRedirectOut'];
+				};
 			};
 			/** @description Validation Error */
 			422: {
@@ -2531,6 +3318,125 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['AnalyticsSummaryOut'];
+				};
+			};
+		};
+	};
+	get_my_organization_api_v1_organizations_me_get: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OrganizationProfileOut'];
+				};
+			};
+		};
+	};
+	update_my_organization_api_v1_organizations_me_patch: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['OrganizationUpdateRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OrganizationProfileOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	list_organizations_api_v1_organizations_get: {
+		parameters: {
+			query?: {
+				verification_status?: components['schemas']['OrgVerificationStatus'] | null;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OrganizationListItemOut'][];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	verify_organization_api_v1_organizations__organization_id__verify_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				organization_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['OrganizationVerifyRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OrganizationListItemOut'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
 				};
 			};
 		};

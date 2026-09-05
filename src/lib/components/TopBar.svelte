@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { Bell, Cloud, CloudOff, GraduationCap, LogOut, Map, Satellite } from '@lucide/svelte';
+	import {
+		Bell,
+		Building2,
+		Cloud,
+		CloudOff,
+		GraduationCap,
+		LogOut,
+		Map,
+		ShieldCheck
+	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -24,17 +33,20 @@
 	// Это единственный индикатор состояния, который человек видит всегда.
 	const mood = $derived(overallMood(reports.items));
 
-	// Волонтёру без доступа к карте нечего на ней делать — ведём на обучение,
-	// иначе он упрётся в редирект гварда и не поймёт, что от него хотят.
+	// У каждой роли свой набор верхних вкладок. Волонтёру без доступа к карте
+	// нечего на ней делать — ведём на обучение, иначе он упрётся в редирект
+	// гварда и не поймёт, что от него хотят.
 	const links = $derived(
-		session.isStaff
-			? [
-					{ href: resolve('/map'), label: 'Карта', icon: Map },
-					{ href: resolve('/moderate'), label: 'Предложка', icon: Satellite }
-				]
-			: session.hasMapAccess
-				? [{ href: resolve('/map'), label: 'Карта', icon: Map }]
-				: [{ href: resolve('/course'), label: 'Обучение', icon: GraduationCap }]
+		session.isCoordinator
+			? [{ href: resolve('/admin'), label: 'Админ-панель', icon: ShieldCheck }]
+			: session.isStaff
+				? [
+						{ href: resolve('/map'), label: 'Карта', icon: Map },
+						{ href: resolve('/org'), label: 'Кабинет ООПТ', icon: Building2 }
+					]
+				: session.hasMapAccess
+					? [{ href: resolve('/map'), label: 'Карта', icon: Map }]
+					: [{ href: resolve('/course'), label: 'Обучение', icon: GraduationCap }]
 	);
 
 	// Счётчик тянем один раз при появлении профиля: колокольчик не должен
@@ -53,7 +65,7 @@
 	class="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 sm:gap-4 sm:px-4 sm:py-3"
 	style="padding-top: max(0.5rem, env(safe-area-inset-top))"
 >
-	<a href={resolve('/map')} class="flex shrink-0 items-center gap-2 text-slate-900">
+	<a href={resolve(session.landingPath)} class="flex shrink-0 items-center gap-2 text-slate-900">
 		<Logo {mood} size={30} title="Чистый берег" />
 		<span class="hidden text-sm font-semibold sm:inline">Чистый берег</span>
 	</a>
@@ -78,7 +90,11 @@
 		<div class="hidden min-w-0 text-right md:block">
 			<p class="truncate text-sm font-medium text-slate-900">{profile.full_name}</p>
 			<p class="truncate text-xs text-slate-500">
-				{session.isStaff ? `Сотрудник ООПТ${orgName ? ` · ${orgName}` : ''}` : 'Волонтёр'}
+				{session.isCoordinator
+					? 'Координатор Фонда'
+					: session.isStaff
+						? `Сотрудник ООПТ${orgName ? ` · ${orgName}` : ''}`
+						: 'Волонтёр'}
 			</p>
 		</div>
 		{#if pendingCount > 0 || !offlineQueue.online}

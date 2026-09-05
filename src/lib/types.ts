@@ -1,4 +1,4 @@
-export type Role = 'volunteer' | 'staff';
+export type Role = 'volunteer' | 'staff' | 'coordinator';
 
 export type User = {
 	id: string;

@@ -140,6 +140,9 @@
 										},
 										{
 											"$ref": "#/components/schemas/StaffProfile"
+										},
+										{
+											"$ref": "#/components/schemas/CoordinatorProfile"
 										}
 									],
 									"title": "Response Get Me Auth Me Get"
@@ -158,7 +161,7 @@
 		"/api/v1/hypotheses": {
 			"post": {
 				"tags": ["business-logic"],
-				"summary": "Create a new ecological observation (hypothesis)",
+				"summary": "Создать гипотезу (экологическое наблюдение)",
 				"operationId": "create_hypothesis_api_v1_hypotheses_post",
 				"requestBody": {
 					"content": {
@@ -283,6 +286,84 @@
 				}
 			}
 		},
+		"/api/v1/hypotheses/my": {
+			"get": {
+				"tags": ["business-logic"],
+				"summary": "Мои точки: статус, описание и причина отказа",
+				"description": "Личная лента автора точек.\n\nСмысл ручки — обратная связь: человек отправил точку и должен видеть,\nчто с ней стало. Поэтому отдаются все статусы, включая rejected с\nпричиной: молчаливый отказ — главная причина, по которой волонтёр не\nприсылает вторую точку.\n\nOffset-пагинация, а не курсор: лента своя, короткая и отсортирована по\nдате создания, которая не меняется — сдвига страниц, из-за которого\nкурсоры и нужны, здесь не возникает.",
+				"operationId": "list_my_hypotheses_api_v1_hypotheses_my_get",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "status",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/HypothesisStatus"
+								},
+								{
+									"type": "null"
+								}
+							],
+							"description": "Фильтр по статусу точки",
+							"title": "Status"
+						},
+						"description": "Фильтр по статусу точки"
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"maximum": 100,
+							"minimum": 1,
+							"default": 20,
+							"title": "Limit"
+						}
+					},
+					{
+						"name": "offset",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 0,
+							"default": 0,
+							"title": "Offset"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/MyHypothesesListOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/api/v1/map/layers": {
 			"get": {
 				"tags": ["business-logic"],
@@ -305,6 +386,281 @@
 						"OAuth2PasswordBearer": []
 					}
 				]
+			}
+		},
+		"/api/v1/events": {
+			"get": {
+				"tags": ["events"],
+				"summary": "Список мероприятий (своя ООПТ для сотрудника, planned для волонтёра)",
+				"description": "Одна ручка на две роли, но с разной выборкой.\n\nСотрудник ведёт свои мероприятия — видит все статусы своей ООПТ.\nВолонтёр выбирает, куда поехать — видит только запланированные и по\nвсем территориям: человек из Петропавловска может поехать и в\nКроноцкий, и в Южно-Камчатский.",
+				"operationId": "list_events_api_v1_events_get",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "status",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/EventStatus"
+								},
+								{
+									"type": "null"
+								}
+							],
+							"description": "Фильтр по статусу; для волонтёра игнорируется",
+							"title": "Status"
+						},
+						"description": "Фильтр по статусу; для волонтёра игнорируется"
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"maximum": 200,
+							"minimum": 1,
+							"default": 50,
+							"title": "Limit"
+						}
+					},
+					{
+						"name": "offset",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 0,
+							"default": 0,
+							"title": "Offset"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/EventListOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/events/{event_id}/join": {
+			"post": {
+				"tags": ["events"],
+				"summary": "Записаться на мероприятие (волонтёр, идемпотентно)",
+				"operationId": "join_event_api_v1_events__event_id__join_post",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "event_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid",
+							"title": "Event Id"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/EventJoinOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"tags": ["events"],
+				"summary": "Отменить запись на мероприятие (волонтёр)",
+				"description": "Отмена записи.\n\nИдемпотентна так же, как и запись: 204 и в случае, когда записи не\nбыло. Клиент хочет получить состояние «я не участвую», и оно\nдостигнуто.",
+				"operationId": "leave_event_api_v1_events__event_id__join_delete",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "event_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid",
+							"title": "Event Id"
+						}
+					}
+				],
+				"responses": {
+					"204": {
+						"description": "Successful Response"
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/events/{event_id}": {
+			"patch": {
+				"tags": ["events"],
+				"summary": "Обновить дату, место и описание мероприятия (сотрудник ООПТ)",
+				"operationId": "update_event_api_v1_events__event_id__patch",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "event_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid",
+							"title": "Event Id"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/EventUpdateRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/EventOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/events/{event_id}/complete": {
+			"post": {
+				"tags": ["events"],
+				"summary": "Закрыть мероприятие с итогами уборки (сотрудник ООПТ)",
+				"description": "Закрытие мероприятия — момент, когда точка становится убранной.\n\nГипотеза переводится в ``cleaned`` здесь, а не отдельным вызовом: два\nзапроса означали бы состояние «мероприятие закрыто, а точка на карте\nвсё ещё грязная», и рано или поздно система в нём бы и застряла.",
+				"operationId": "complete_event_api_v1_events__event_id__complete_post",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "event_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid",
+							"title": "Event Id"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/EventCompleteRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/EventCompleteResponse"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/api/v1/monitoring-sites": {
@@ -559,8 +915,15 @@
 					}
 				],
 				"responses": {
-					"307": {
-						"description": "Successful Response"
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CourseRedirectOut"
+								}
+							}
+						}
 					},
 					"422": {
 						"description": "Validation Error",
@@ -1452,6 +1815,184 @@
 				]
 			}
 		},
+		"/api/v1/organizations/me": {
+			"get": {
+				"tags": ["organizations"],
+				"summary": "Профиль своей организации (сотрудник ООПТ)",
+				"operationId": "get_my_organization_api_v1_organizations_me_get",
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OrganizationProfileOut"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				]
+			},
+			"patch": {
+				"tags": ["organizations"],
+				"summary": "Обновить контактные данные своей организации (сотрудник ООПТ)",
+				"operationId": "update_my_organization_api_v1_organizations_me_patch",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/OrganizationUpdateRequest"
+							}
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OrganizationProfileOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				]
+			}
+		},
+		"/api/v1/organizations": {
+			"get": {
+				"tags": ["organizations"],
+				"summary": "Список организаций для верификации (координатор)",
+				"operationId": "list_organizations_api_v1_organizations_get",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "verification_status",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/OrgVerificationStatus"
+								},
+								{
+									"type": "null"
+								}
+							],
+							"title": "Verification Status"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/OrganizationListItemOut"
+									},
+									"title": "Response List Organizations Api V1 Organizations Get"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/organizations/{organization_id}/verify": {
+			"post": {
+				"tags": ["organizations"],
+				"summary": "Ручной вердикт по верификации организации (координатор)",
+				"operationId": "verify_organization_api_v1_organizations__organization_id__verify_post",
+				"security": [
+					{
+						"OAuth2PasswordBearer": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "organization_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid",
+							"title": "Organization Id"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/OrganizationVerifyRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Successful Response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OrganizationListItemOut"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/HTTPValidationError"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/": {
 			"get": {
 				"tags": ["health"],
@@ -1624,7 +2165,7 @@
 						"anyOf": [
 							{
 								"type": "string",
-								"pattern": "password"
+								"pattern": "^password$"
 							},
 							{
 								"type": "null"
@@ -1638,6 +2179,7 @@
 					},
 					"password": {
 						"type": "string",
+						"format": "password",
 						"title": "Password"
 					},
 					"scope": {
@@ -1665,6 +2207,7 @@
 								"type": "null"
 							}
 						],
+						"format": "password",
 						"title": "Client Secret"
 					}
 				},
@@ -1956,6 +2499,47 @@
 				"title": "ConsentStatus",
 				"description": "Согласие законного представителя на участие несовершеннолетнего."
 			},
+			"CoordinatorProfile": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"email": {
+						"type": "string",
+						"title": "Email"
+					},
+					"full_name": {
+						"type": "string",
+						"title": "Full Name"
+					},
+					"role": {
+						"$ref": "#/components/schemas/UserRole"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Created At"
+					}
+				},
+				"type": "object",
+				"required": ["id", "email", "full_name", "role", "created_at"],
+				"title": "CoordinatorProfile",
+				"description": "Координатор программы со стороны Фонда.\n\nКроме базовых полей пользователя добавить нечего: координатор не\nпривязан к организации и не проходит курс/согласие — это программная\nроль, а не территориальная и не волонтёрская."
+			},
+			"CourseRedirectOut": {
+				"properties": {
+					"url": {
+						"type": "string",
+						"title": "Url"
+					}
+				},
+				"type": "object",
+				"required": ["url"],
+				"title": "CourseRedirectOut",
+				"description": "Куда идти дальше. JSON, а не HTTP-редирект: ручка требует Bearer-токен,\nа обычная навигация браузера (клик по `<a href>`) заголовков не шлёт —\nпоэтому фронт делает авторизованный запрос сюда и сам переходит по url."
+			},
 			"CourseStatusOut": {
 				"properties": {
 					"course_url": {
@@ -2082,6 +2666,367 @@
 				"required": ["slug", "title", "url", "expires_in", "scoped_to_organization"],
 				"title": "DashboardEmbedOut",
 				"description": "Подписанная ссылка на дашборд Metabase.\n\n`expires_in` отдаётся, чтобы фронт перезапрашивал ссылку до истечения\nсрока, а не показывал пользователю протухший iframe."
+			},
+			"EventCompleteRequest": {
+				"properties": {
+					"actual_participants": {
+						"type": "integer",
+						"maximum": 10000.0,
+						"minimum": 0.0,
+						"title": "Actual Participants",
+						"description": "Сколько человек реально пришло"
+					},
+					"waste_volume_m3": {
+						"anyOf": [
+							{
+								"type": "number",
+								"maximum": 100000.0,
+								"minimum": 0.0
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Waste Volume M3",
+						"description": "Объём собранного мусора, м³"
+					},
+					"waste_mass_kg": {
+						"anyOf": [
+							{
+								"type": "number",
+								"maximum": 1000000.0,
+								"minimum": 0.0
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Waste Mass Kg",
+						"description": "Масса собранного мусора, кг"
+					},
+					"result_notes": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 4096
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Result Notes"
+					},
+					"completed_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Completed At",
+						"description": "Фактическое время окончания; по умолчанию — сейчас"
+					},
+					"attended_user_ids": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Attended User Ids",
+						"description": "Участники, отмеченные как пришедшие"
+					}
+				},
+				"type": "object",
+				"required": ["actual_participants"],
+				"title": "EventCompleteRequest",
+				"description": "Итоги уборки.\n\nОбъём или масса — хотя бы одно: без них закрытие мероприятия не даёт\nпроекту ничего, а именно эти числа идут в отчётность по вывезенному\nмусору."
+			},
+			"EventCompleteResponse": {
+				"properties": {
+					"event": {
+						"$ref": "#/components/schemas/EventOut"
+					},
+					"hypothesis_id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Hypothesis Id"
+					},
+					"hypothesis_status": {
+						"$ref": "#/components/schemas/HypothesisStatus"
+					},
+					"attendance_marked": {
+						"type": "integer",
+						"title": "Attendance Marked",
+						"default": 0
+					}
+				},
+				"type": "object",
+				"required": ["event", "hypothesis_id", "hypothesis_status"],
+				"title": "EventCompleteResponse",
+				"description": "Ответ закрытия мероприятия.\n\nСтатус гипотезы возвращается явно: смена точки на cleaned — побочный\nэффект этого вызова, и клиент должен видеть, что он произошёл, не\nперезапрашивая точку."
+			},
+			"EventJoinOut": {
+				"properties": {
+					"event_id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Event Id"
+					},
+					"user_id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "User Id"
+					},
+					"joined_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Joined At"
+					},
+					"attended": {
+						"type": "boolean",
+						"title": "Attended"
+					},
+					"already_joined": {
+						"type": "boolean",
+						"title": "Already Joined",
+						"default": false
+					}
+				},
+				"type": "object",
+				"required": ["event_id", "user_id", "joined_at", "attended"],
+				"title": "EventJoinOut"
+			},
+			"EventListOut": {
+				"properties": {
+					"items": {
+						"items": {
+							"$ref": "#/components/schemas/EventOut"
+						},
+						"type": "array",
+						"title": "Items"
+					},
+					"total": {
+						"type": "integer",
+						"title": "Total"
+					},
+					"limit": {
+						"type": "integer",
+						"title": "Limit"
+					},
+					"offset": {
+						"type": "integer",
+						"title": "Offset"
+					}
+				},
+				"type": "object",
+				"required": ["items", "total", "limit", "offset"],
+				"title": "EventListOut"
+			},
+			"EventOut": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"hypothesis_id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Hypothesis Id"
+					},
+					"organization_id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Organization Id"
+					},
+					"title": {
+						"type": "string",
+						"title": "Title"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"place": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Place"
+					},
+					"scheduled_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Scheduled At"
+					},
+					"status": {
+						"$ref": "#/components/schemas/EventStatus"
+					},
+					"participants_count": {
+						"type": "integer",
+						"title": "Participants Count",
+						"default": 0
+					},
+					"is_joined": {
+						"type": "boolean",
+						"title": "Is Joined",
+						"default": false
+					},
+					"completed_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Completed At"
+					},
+					"actual_participants": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Actual Participants"
+					},
+					"waste_volume_m3": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Waste Volume M3"
+					},
+					"waste_mass_kg": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Waste Mass Kg"
+					},
+					"result_notes": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Result Notes"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Created At"
+					},
+					"updated_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Updated At"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"hypothesis_id",
+					"organization_id",
+					"title",
+					"status",
+					"created_at",
+					"updated_at"
+				],
+				"title": "EventOut"
+			},
+			"EventStatus": {
+				"type": "string",
+				"enum": ["planned", "in_progress", "completed", "cancelled"],
+				"title": "EventStatus",
+				"description": "Lifecycle of a field event."
+			},
+			"EventUpdateRequest": {
+				"properties": {
+					"scheduled_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Scheduled At"
+					},
+					"place": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 512
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Place"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 4096
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					}
+				},
+				"type": "object",
+				"title": "EventUpdateRequest",
+				"description": "PATCH-семантика: применяются только переданные поля.\n\nНе переданное поле и переданный null — разные вещи (не трогать против\n«стереть»), поэтому обработчик смотрит на model_fields_set, а не на\nNone."
 			},
 			"GeoJSONFeature": {
 				"properties": {
@@ -2211,19 +3156,44 @@
 			},
 			"HypothesisCreateRequest": {
 				"properties": {
+					"geometry": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/GeoJSONGeometry"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "GeoJSON Geometry: Point или Polygon. При передаче lat/lon можно опустить."
+					},
 					"lat": {
-						"type": "number",
-						"maximum": 90.0,
-						"minimum": -90.0,
+						"anyOf": [
+							{
+								"type": "number",
+								"maximum": 90.0,
+								"minimum": -90.0
+							},
+							{
+								"type": "null"
+							}
+						],
 						"title": "Lat",
-						"description": "Latitude (WGS-84)"
+						"description": "Latitude (WGS-84). Обязателен без geometry."
 					},
 					"lon": {
-						"type": "number",
-						"maximum": 180.0,
-						"minimum": -180.0,
+						"anyOf": [
+							{
+								"type": "number",
+								"maximum": 180.0,
+								"minimum": -180.0
+							},
+							{
+								"type": "null"
+							}
+						],
 						"title": "Lon",
-						"description": "Longitude (WGS-84)"
+						"description": "Longitude (WGS-84). Обязателен без geometry."
 					},
 					"description": {
 						"type": "string",
@@ -2258,11 +3228,38 @@
 						],
 						"title": "Monitoring Site Id",
 						"description": "Если точка — очередной замер на площадке многолетних наблюдений"
+					},
+					"client_id": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "uuid"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Client Id",
+						"description": "Идемпотентный ключ от клиента"
+					},
+					"created_at_client": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Created At Client",
+						"description": "Время создания на устройстве. Для определения offline-режима."
 					}
 				},
 				"type": "object",
-				"required": ["lat", "lon", "description"],
-				"title": "HypothesisCreateRequest"
+				"required": ["description"],
+				"title": "HypothesisCreateRequest",
+				"description": "Создание гипотезы.\n\nПоддерживает два формата ввода геометрии:\n- Устаревший: lat + lon (обратная совместимость).\n- Новый: geometry (GeoJSON Feature или Geometry).\nЕсли передано geometry — lat/lon извлекаются из centroid'а\nна сервере; если только lat/lon — geometry не обязателен."
 			},
 			"HypothesisOut": {
 				"properties": {
@@ -2313,6 +3310,41 @@
 					},
 					"status": {
 						"$ref": "#/components/schemas/HypothesisStatus"
+					},
+					"reject_reason": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reject Reason"
+					},
+					"client_id": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "uuid"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Client Id"
+					},
+					"created_at_client": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Created At Client"
 					},
 					"trash_categories": {
 						"anyOf": [
@@ -2465,7 +3497,7 @@
 			},
 			"HypothesisStatus": {
 				"type": "string",
-				"enum": ["pending", "approved", "rejected", "drone_requested"],
+				"enum": ["pending", "approved", "rejected", "drone_requested", "cleaned"],
 				"title": "HypothesisStatus",
 				"description": "Lifecycle of a volunteer-submitted hypothesis."
 			},
@@ -2473,7 +3505,20 @@
 				"properties": {
 					"status": {
 						"$ref": "#/components/schemas/HypothesisStatus",
-						"description": "New status for the hypothesis"
+						"description": "Новый статус гипотезы"
+					},
+					"reason": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 1024
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reason",
+						"description": "Причина отказа. Обязательна при rejected — волонтёр видит её в ленте «Мои точки»"
 					}
 				},
 				"type": "object",
@@ -2674,6 +3719,139 @@
 				],
 				"title": "MonitoringSiteOut"
 			},
+			"MyHypothesesListOut": {
+				"properties": {
+					"items": {
+						"items": {
+							"$ref": "#/components/schemas/MyHypothesisOut"
+						},
+						"type": "array",
+						"title": "Items"
+					},
+					"total": {
+						"type": "integer",
+						"title": "Total"
+					},
+					"limit": {
+						"type": "integer",
+						"title": "Limit"
+					},
+					"offset": {
+						"type": "integer",
+						"title": "Offset"
+					}
+				},
+				"type": "object",
+				"required": ["items", "total", "limit", "offset"],
+				"title": "MyHypothesesListOut",
+				"description": "Страница ленты.\n\n`total` считается отдельным запросом: с limit длина items ничего не\nговорит о размере ленты, а клиенту нужно знать, есть ли что листать."
+			},
+			"MyHypothesisOut": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"status": {
+						"$ref": "#/components/schemas/HypothesisStatus"
+					},
+					"description": {
+						"type": "string",
+						"title": "Description"
+					},
+					"reject_reason": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reject Reason"
+					},
+					"lat": {
+						"type": "number",
+						"title": "Lat"
+					},
+					"lon": {
+						"type": "number",
+						"title": "Lon"
+					},
+					"photo_url": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Photo Url"
+					},
+					"organization_id": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "uuid"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Organization Id"
+					},
+					"event_id": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "uuid"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Event Id"
+					},
+					"event_status": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/EventStatus"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"event_scheduled_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Event Scheduled At"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Created At"
+					},
+					"updated_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Updated At"
+					}
+				},
+				"type": "object",
+				"required": ["id", "status", "description", "lat", "lon", "created_at", "updated_at"],
+				"title": "MyHypothesisOut",
+				"description": "Одна точка в личной ленте волонтёра.\n\nУрезанная проекция HypothesisOut: смета и коэффициенты — рабочие данные\nООПТ, автору точки они не нужны. Зато нужны причина отказа и судьба\nточки: попала ли она в мероприятие и когда его уберут."
+			},
 			"NotificationKind": {
 				"type": "string",
 				"enum": [
@@ -2799,6 +3977,45 @@
 				"title": "OrgVerificationStatus",
 				"description": "Result of external INN verification."
 			},
+			"OrganizationListItemOut": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"inn": {
+						"type": "string",
+						"title": "Inn"
+					},
+					"cadastral_number": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cadastral Number"
+					},
+					"verification_status": {
+						"$ref": "#/components/schemas/OrgVerificationStatus"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Created At"
+					}
+				},
+				"type": "object",
+				"required": ["id", "name", "inn", "cadastral_number", "verification_status", "created_at"],
+				"title": "OrganizationListItemOut"
+			},
 			"OrganizationOut": {
 				"properties": {
 					"id": {
@@ -2837,6 +4054,96 @@
 				"type": "object",
 				"required": ["id", "name", "inn", "cadastral_number", "verification_status", "created_at"],
 				"title": "OrganizationOut"
+			},
+			"OrganizationProfileOut": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"inn": {
+						"type": "string",
+						"title": "Inn"
+					},
+					"cadastral_number": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cadastral Number"
+					},
+					"verification_status": {
+						"$ref": "#/components/schemas/OrgVerificationStatus"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"title": "Created At"
+					},
+					"contact_email": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Contact Email"
+					},
+					"contact_phone": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Contact Phone"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"staff_members": {
+						"items": {
+							"$ref": "#/components/schemas/StaffMemberOut"
+						},
+						"type": "array",
+						"title": "Staff Members"
+					},
+					"parcels_count": {
+						"type": "integer",
+						"title": "Parcels Count",
+						"default": 0
+					},
+					"monitoring_sites_count": {
+						"type": "integer",
+						"title": "Monitoring Sites Count",
+						"default": 0
+					}
+				},
+				"type": "object",
+				"required": ["id", "name", "inn", "cadastral_number", "verification_status", "created_at"],
+				"title": "OrganizationProfileOut",
+				"description": "Профиль организации для кабинета сотрудника ООПТ.\n\nРасширяет OrganizationOut списком сотрудников и счётчиками участков /\nплощадок наблюдений — то, с чего сотрудник обычно начинает работу в\nкабинете, не переходя на другие вкладки."
 			},
 			"OrganizationRegisterRequest": {
 				"properties": {
@@ -2886,6 +4193,73 @@
 				"type": "object",
 				"required": ["org_name", "inn", "email", "password", "full_name"],
 				"title": "OrganizationRegisterRequest"
+			},
+			"OrganizationUpdateRequest": {
+				"properties": {
+					"contact_email": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "email"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Contact Email"
+					},
+					"contact_phone": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 32
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Contact Phone"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 4096
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					}
+				},
+				"type": "object",
+				"title": "OrganizationUpdateRequest",
+				"description": "PATCH-семантика: применяются только переданные поля.\n\nНазвание и ИНН сюда не входят — они канонические, взяты из ЕГРЮЛ при\nрегистрации, и правка руками означала бы разойтись с реестром."
+			},
+			"OrganizationVerifyRequest": {
+				"properties": {
+					"approved": {
+						"type": "boolean",
+						"title": "Approved"
+					},
+					"reason": {
+						"anyOf": [
+							{
+								"type": "string",
+								"maxLength": 1024
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reason",
+						"description": "Обязательна при отказе — организация должна понимать, что исправить"
+					}
+				},
+				"type": "object",
+				"required": ["approved"],
+				"title": "OrganizationVerifyRequest"
 			},
 			"ParcelGeometryRequest": {
 				"properties": {
@@ -3419,6 +4793,26 @@
 				],
 				"title": "SiteSurveyOut"
 			},
+			"StaffMemberOut": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Id"
+					},
+					"full_name": {
+						"type": "string",
+						"title": "Full Name"
+					},
+					"email": {
+						"type": "string",
+						"title": "Email"
+					}
+				},
+				"type": "object",
+				"required": ["id", "full_name", "email"],
+				"title": "StaffMemberOut"
+			},
 			"StaffProfile": {
 				"properties": {
 					"id": {
@@ -3598,6 +4992,13 @@
 					"type": {
 						"type": "string",
 						"title": "Error Type"
+					},
+					"input": {
+						"title": "Input"
+					},
+					"ctx": {
+						"type": "object",
+						"title": "Context"
 					}
 				},
 				"type": "object",

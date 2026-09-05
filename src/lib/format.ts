@@ -16,3 +16,13 @@ export function plural(count: number, one: string, few: string, many: string) {
 export function formatCoords([lng, lat]: [number, number]) {
 	return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
+
+const MONEY = new Intl.NumberFormat('ru-RU', {
+	style: 'currency',
+	currency: 'RUB',
+	maximumFractionDigits: 0
+});
+
+export function formatMoney(value: number) {
+	return MONEY.format(value);
+}

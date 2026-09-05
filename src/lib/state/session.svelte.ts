@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { ApiError, loadToken, setToken, setUnauthorizedHandler } from '$lib/api/client';
 import {
 	auth,
+	isCoordinatorProfile,
 	isStaffProfile,
 	isVolunteerProfile,
 	type Profile,
@@ -41,8 +42,19 @@ class Session {
 		return this.profile !== null && isStaffProfile(this.profile);
 	}
 
+	get isCoordinator(): boolean {
+		return this.profile !== null && isCoordinatorProfile(this.profile);
+	}
+
 	get name(): string {
 		return this.profile?.full_name ?? '';
+	}
+
+	/** Куда вести после входа — у каждой роли свой раздел приложения. */
+	get landingPath(): '/map' | '/org' | '/admin' {
+		if (this.role === 'staff') return '/org';
+		if (this.role === 'coordinator') return '/admin';
+		return '/map';
 	}
 
 	/** Организация сотрудника — по ней фильтруется карта и предложка. */
@@ -51,11 +63,13 @@ class Session {
 		return null;
 	}
 
-	/** Карта открыта только после проверенного сертификата. */
+	/** Карта открыта только после проверенного сертификата. Координатору
+	 *  карта не нужна вовсе — у него свой раздел, `/admin`. */
 	get hasMapAccess(): boolean {
 		if (!this.profile) return false;
 		if (isStaffProfile(this.profile)) return true;
-		return this.profile.is_trained === true;
+		if (isVolunteerProfile(this.profile)) return this.profile.is_trained === true;
+		return false;
 	}
 
 	/** Нужен документ от родителя: до 18 лет и согласие ещё не подтверждено. */

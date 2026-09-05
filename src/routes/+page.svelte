@@ -9,7 +9,7 @@
 
 	$effect(() => {
 		if (!session.ready) return;
-		goto(resolve(session.profile ? '/map' : '/login'), { replaceState: true });
+		goto(resolve(session.profile ? session.landingPath : '/login'), { replaceState: true });
 	});
 </script>
 

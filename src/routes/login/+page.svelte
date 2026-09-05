@@ -17,7 +17,7 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!ready || session.busy) return;
-		if (await session.login(email.trim(), password)) goto(resolve('/map'));
+		if (await session.login(email.trim(), password)) goto(resolve(session.landingPath));
 	}
 </script>
 
