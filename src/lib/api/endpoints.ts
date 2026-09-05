@@ -211,6 +211,15 @@ export const events = {
 			query: { status: params.status, limit: params.limit, offset: params.offset }
 		}),
 
+	/** Создать мероприятие вручную (сотрудник ООПТ). */
+	create: (body: {
+		title: string;
+		description?: string;
+		place?: string;
+		scheduled_at?: string;
+		hypothesis_id?: string;
+	}) => request<CleanupEvent>('/api/v1/events', { body }),
+
 	/** Записаться (волонтёр). Идемпотентно: повтор возвращает already_joined. */
 	join: (id: string) =>
 		request<Schemas['EventJoinOut']>(`/api/v1/events/${id}/join`, { method: 'POST' }),
@@ -218,8 +227,17 @@ export const events = {
 	/** Отменить запись. */
 	leave: (id: string) => request<void>(`/api/v1/events/${id}/join`, { method: 'DELETE' }),
 
-	update: (id: string, body: Schemas['EventUpdateRequest']) =>
-		request<CleanupEvent>(`/api/v1/events/${id}`, { method: 'PATCH', body }),
+	update: (
+		id: string,
+		body: {
+			title?: string;
+			place?: string;
+			description?: string;
+			scheduled_at?: string;
+		}
+	) => request<CleanupEvent>(`/api/v1/events/${id}`, { method: 'PATCH', body }),
+
+	cancel: (id: string) => request<CleanupEvent>(`/api/v1/events/${id}/cancel`, { method: 'POST' }),
 
 	complete: (id: string, body: Schemas['EventCompleteRequest']) =>
 		request<Schemas['EventCompleteResponse']>(`/api/v1/events/${id}/complete`, {
@@ -243,6 +261,16 @@ export const parcels = {
 			body: { cadastral_number: cadastralNumber }
 		}),
 
+	/** Участок без кадастра: полигон из Nominatim (OSM). */
+	addFromOsm: (body: {
+		osm_id: string;
+		name: string;
+		geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
+	}) =>
+		request<CadastralParcel>('/api/v1/organizations/me/parcels/from-osm', {
+			body
+		}),
+
 	retry: (id: string) =>
 		request<CadastralParcel>(`/api/v1/parcels/${id}/retry`, { method: 'POST' }),
 
@@ -261,10 +289,14 @@ export const parcels = {
 			geometry?: unknown;
 		}>('/api/v1/parcels/resolve-check', { query: { cadastral_number: cadastralNumber } }),
 
-	setGeometry: (id: string, geometry: Schemas['GeoJSONGeometry']) =>
+	setGeometry: (
+		id: string,
+		geometry: Schemas['GeoJSONGeometry'] | GeoJSON.Geometry,
+		source: 'manual' | 'osm' = 'manual'
+	) =>
 		request<CadastralParcel>(`/api/v1/parcels/${id}/geometry`, {
 			method: 'PUT',
-			body: { geometry }
+			body: { geometry, source }
 		}),
 
 	remove: (id: string) => request<void>(`/api/v1/parcels/${id}`, { method: 'DELETE' })
@@ -302,5 +334,98 @@ export const organizations = {
 		request<OrganizationListItem>(`/api/v1/organizations/${id}/verify`, {
 			method: 'POST',
 			body
+		})
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ML — сканы подложки и находки автодетекции
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type MlFinding = {
+	id: string;
+	scan_id: string;
+	detection_id: number | null;
+	lat: number | null;
+	lon: number | null;
+	trash_categories: string[] | null;
+	dominant_category: string | null;
+	fraction: string | null;
+	confidence: number | null;
+	estimated_volume_m3: number | null;
+	estimated_mass_kg: number | null;
+	label_ru: string | null;
+	color_hex: string | null;
+	hypothesis_id: string | null;
+	created_at: string;
+};
+
+export type MlScan = {
+	id: string;
+	requester_id: string | null;
+	organization_id: string | null;
+	bbox: number[];
+	zoom: number;
+	tile_source: string | null;
+	ml_job_id: string | null;
+	summary: {
+		count?: number;
+		dominant_category?: string | null;
+		total_volume_m3?: number | null;
+		coverage_ratio?: number;
+	} | null;
+	geojson: GeoJSON.FeatureCollection | null;
+	overlay_bounds: number[][] | null;
+	imagery: {
+		source?: string;
+		attribution?: string;
+		zoom?: number;
+		gsd_m_per_px?: number;
+		too_coarse?: boolean;
+		candidates_suppressed?: boolean;
+	} | null;
+	fraud_flags: Array<{ code: string; severity: string; message: string }> | null;
+	model_info: { backend?: string; trained?: boolean; version?: string } | null;
+	candidates_suppressed: boolean;
+	findings_count: number;
+	hypotheses_created: number;
+	created_at: string;
+	findings?: MlFinding[] | null;
+};
+
+export type MlHealth = {
+	configured: boolean;
+	status: string;
+	detail?: string | null;
+	backend?: string | null;
+	backend_ready?: boolean | null;
+	trained?: boolean | null;
+	version?: string | null;
+};
+
+export const ml = {
+	health: () => request<MlHealth>('/api/v1/ml/health'),
+
+	createScan: (body: { bbox: [number, number, number, number]; zoom?: number; source?: string }) =>
+		request<MlScan>('/api/v1/ml/scans', { body }),
+
+	listScans: (params: { limit?: number; offset?: number } = {}) =>
+		request<{ items: MlScan[]; total: number }>('/api/v1/ml/scans', {
+			query: { limit: params.limit, offset: params.offset }
+		}),
+
+	getScan: (id: string) => request<MlScan>(`/api/v1/ml/scans/${id}`),
+
+	listFindings: (params: { limit?: number; offset?: number; scan_id?: string } = {}) =>
+		request<{ items: MlFinding[]; total: number }>('/api/v1/ml/findings', {
+			query: {
+				limit: params.limit,
+				offset: params.offset,
+				scan_id: params.scan_id
+			}
+		}),
+
+	overlayGeojson: (params: { limit?: number; scan_id?: string } = {}) =>
+		request<GeoJSON.FeatureCollection>('/api/v1/ml/overlay.geojson', {
+			query: { limit: params.limit, scan_id: params.scan_id }
 		})
 };

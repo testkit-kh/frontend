@@ -6,6 +6,7 @@
 		FillLayer,
 		LineLayer,
 		MapEvents,
+		Marker,
 		NavigationControl,
 		Popup,
 		ScaleControl,
@@ -15,6 +16,7 @@
 	import type { LayerClickInfo } from 'svelte-maplibre';
 	import { untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { Radar } from '@lucide/svelte';
 	import type { Report } from '$lib/types';
 	import { territoriesFeature, type Territory } from '$lib/data/territories';
 	import { healthByTerritory } from '$lib/state/health';
@@ -39,7 +41,25 @@
 		draft = [],
 		onmapclick,
 		onterritory,
-		parcels = { type: 'FeatureCollection', features: [] }
+		parcels = { type: 'FeatureCollection', features: [] },
+		mlOverlay = { type: 'FeatureCollection', features: [] },
+		mlVisible = true,
+		onmlselect,
+		mapApi = $bindable(null),
+		/** Точка из URL (?lat=&lon=) — один раз, потом родитель чистит. */
+		focus = null as { lat: number; lon: number } | null,
+		/** Инкремент с родителя: принудительно fitBounds (даже к той же ООПТ). */
+		viewEpoch = 0,
+		/** Свои границы (участки org), если каталог ООПТ не сматчился. */
+		homeBounds = null as [[number, number], [number, number]] | null,
+		/** Маркеры находок ML (центроиды / точки). */
+		mlMarkers = [] as Array<{
+			id: string;
+			lon: number;
+			lat: number;
+			label: string;
+			color?: string | null;
+		}>
 	}: {
 		items: Report[];
 		territories: Territory[];
@@ -55,6 +75,27 @@
 		onterritory?: (id: string) => void;
 		/** Кадастровые участки — «кому принадлежит» (GET /api/v1/map/parcels.geojson). */
 		parcels?: GeoJSON.FeatureCollection;
+		/** Долгоживущий GeoJSON слой автодетекции ML. */
+		mlOverlay?: GeoJSON.FeatureCollection;
+		mlVisible?: boolean;
+		onmlselect?: (properties: Record<string, unknown>) => void;
+		mapApi?: {
+			getMapBounds: () => {
+				bbox: [number, number, number, number];
+				zoom: number;
+			} | null;
+			fitActive: () => void;
+		} | null;
+		focus?: { lat: number; lon: number } | null;
+		viewEpoch?: number;
+		homeBounds?: [[number, number], [number, number]] | null;
+		mlMarkers?: Array<{
+			id: string;
+			lon: number;
+			lat: number;
+			label: string;
+			color?: string | null;
+		}>;
 	} = $props();
 
 	const overview = $derived(activeTerritory === null);
@@ -62,6 +103,30 @@
 	const pins = $derived(overview ? territoryPins(territories, health) : { features: [] });
 
 	let map = $state<MapLibreMap | undefined>();
+
+	function fitActiveView() {
+		if (!map) return;
+		const bounds = activeTerritory?.bounds ?? homeBounds ?? RUSSIA_BOUNDS;
+		map.fitBounds(bounds, {
+			padding: FIT_PADDING,
+			animate: !prefersReducedMotion.current,
+			duration: prefersReducedMotion.current ? 0 : 700
+		});
+	}
+
+	$effect(() => {
+		mapApi = {
+			getMapBounds() {
+				if (!map) return null;
+				const b = map.getBounds();
+				return {
+					bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()],
+					zoom: Math.min(19, Math.max(1, Math.round(map.getZoom())))
+				};
+			},
+			fitActive: () => untrack(() => fitActiveView())
+		};
+	});
 
 	const areas = $derived(toAreas(items));
 	const boundaries = $derived(territoriesFeature(territories));
@@ -129,8 +194,24 @@
 	});
 
 	$effect(() => {
-		const bounds = activeTerritory?.bounds ?? RUSSIA_BOUNDS;
-		untrack(() => map?.fitBounds(bounds, { padding: FIT_PADDING, animate: false }));
+		if (!map) return;
+		const point = focus;
+		// Пока есть focus из URL — только flyTo. Родитель сбрасывает focus
+		// при выборе территории, тогда срабатывает fitBounds ниже.
+		if (point) {
+			untrack(() =>
+				map?.flyTo({
+					center: [point.lon, point.lat],
+					zoom: 16,
+					duration: prefersReducedMotion.current ? 0 : 700
+				})
+			);
+			return;
+		}
+		void viewEpoch;
+		void activeTerritory;
+		void homeBounds;
+		untrack(() => fitActiveView());
 	});
 
 	$effect(() => {
@@ -155,7 +236,9 @@
 	bind:map
 	class="h-full w-full"
 	style={MAP_STYLE}
-	bounds={activeTerritory?.bounds ?? RUSSIA_BOUNDS}
+	center={[100, 62]}
+	zoom={3}
+	bounds={activeTerritory?.bounds ?? homeBounds ?? RUSSIA_BOUNDS}
 	fitBoundsOptions={{ padding: FIT_PADDING }}
 	minZoom={3}
 	maxZoom={18}
@@ -175,9 +258,15 @@
 
 	<GeoJSON id="territories" data={boundaries}>
 		<FillLayer
+			hoverCursor={overview ? 'pointer' : undefined}
 			paint={{
 				'fill-color': '#38bdf8',
 				'fill-opacity': overview ? 0.08 : ['case', isActive, 0.06, 0.02]
+			}}
+			onclick={(event) => {
+				if (!overview || drawMode !== 'off') return;
+				const id = event.features?.[0]?.properties?.id;
+				if (typeof id === 'string') onterritory?.(id);
 			}}
 		/>
 		<LineLayer
@@ -192,23 +281,85 @@
 
 	<!-- Кадастровые участки — «кому принадлежит», отдельно от собственных
 	     полигонов-находок (areas): один описывает территорию владения, другой —
-	     то, что на ней нашли, путать их в одном слое нельзя. -->
+	     то, что на ней нашли, путать их в одном слое нельзя.
+	     В обзоре страны не перехватываем клики — иначе нельзя ткнуть в ООПТ. -->
 	<GeoJSON id="parcels" data={parcels}>
-		<FillLayer hoverCursor="pointer" paint={{ 'fill-color': '#a855f7', 'fill-opacity': 0.18 }}>
-			<Popup openOn="click" closeOnClickOutside>
-				{#snippet children({ data })}
-					{@const props = (data?.properties ?? {}) as { name?: string; description?: string }}
-					<div class="max-w-64 text-xs">
-						<p class="font-medium text-slate-900">{props.name ?? 'Кадастровый участок'}</p>
-						{#if props.description}
-							<p class="mt-1 text-slate-600">{props.description}</p>
-						{/if}
-					</div>
-				{/snippet}
-			</Popup>
+		<FillLayer
+			hoverCursor={overview ? undefined : 'pointer'}
+			paint={{ 'fill-color': '#a855f7', 'fill-opacity': overview ? 0.08 : 0.18 }}
+		>
+			{#if !overview}
+				<Popup openOn="click" closeOnClickOutside>
+					{#snippet children({ data })}
+						{@const props = (data?.properties ?? {}) as { name?: string; description?: string }}
+						<div class="max-w-64 text-xs">
+							<p class="font-medium text-slate-900">{props.name ?? 'Кадастровый участок'}</p>
+							{#if props.description}
+								<p class="mt-1 text-slate-600">{props.description}</p>
+							{/if}
+						</div>
+					{/snippet}
+				</Popup>
+			{/if}
 		</FillLayer>
 		<LineLayer paint={{ 'line-color': '#a855f7', 'line-width': 1.4, 'line-opacity': 0.6 }} />
 	</GeoJSON>
+
+	{#if mlVisible}
+		<!-- Автодетекция ML: фиолетовый оверлей поверх подложки. Не путать с
+		     parcels (тот же оттенок, но участки владения). -->
+		<GeoJSON id="ml-overlay" data={mlOverlay}>
+			<FillLayer
+				hoverCursor="pointer"
+				paint={{
+					'fill-color': ['coalesce', ['get', 'color'], '#8b5cf6'],
+					'fill-opacity': 0.55
+				}}
+				onclick={(event) => {
+					if (drawMode !== 'off') return;
+					const props = event.features?.[0]?.properties;
+					if (props) onmlselect?.(props as Record<string, unknown>);
+				}}
+			>
+				<Popup openOn="click" closeOnClickOutside>
+					{#snippet children({ data })}
+						{@const props = (data?.properties ?? {}) as {
+							label_ru?: string;
+							trash_category?: string;
+							confidence?: number;
+							volume_m3?: number;
+							scanned_at?: string;
+						}}
+						<div class="max-w-64 text-xs">
+							<p class="font-medium text-violet-900">
+								{props.label_ru ?? props.trash_category ?? 'Находка ML'}
+							</p>
+							{#if props.confidence != null}
+								<p class="mt-1 text-slate-600">
+									Уверенность {(Number(props.confidence) * 100).toFixed(0)}%
+								</p>
+							{/if}
+							{#if props.volume_m3 != null}
+								<p class="text-slate-600">~{Number(props.volume_m3).toFixed(2)} м³</p>
+							{/if}
+							{#if props.scanned_at}
+								<p class="mt-1 text-slate-500">
+									{new Date(props.scanned_at).toLocaleString('ru-RU')}
+								</p>
+							{/if}
+						</div>
+					{/snippet}
+				</Popup>
+			</FillLayer>
+			<LineLayer
+				paint={{
+					'line-color': ['coalesce', ['get', 'color'], '#6d28d9'],
+					'line-width': 1.6,
+					'line-opacity': 0.9
+				}}
+			/>
+		</GeoJSON>
+	{/if}
 
 	<GeoJSON id="areas" data={areas}>
 		<FillLayer
@@ -275,8 +426,7 @@
 				filter={['has', 'point_count']}
 				layout={{
 					'text-field': ['get', 'point_count_abbreviated'],
-					'text-size': 12,
-					'text-font': ['Noto Sans Bold']
+					'text-size': 12
 				}}
 				paint={{ 'text-color': '#ffffff' }}
 			/>
@@ -304,6 +454,20 @@
 				onselect={(id) => pick(id)}
 				interactive={drawMode === 'off'}
 			/>
+		{/each}
+	{/if}
+
+	{#if mlVisible}
+		{#each mlMarkers as mark (mark.id)}
+			<Marker lngLat={[mark.lon, mark.lat]} anchor="center" zIndex={3} class="!bg-transparent">
+				<span
+					class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-md"
+					style="background:{mark.color ?? '#7c3aed'}"
+					title={mark.label}
+				>
+					<Radar size={15} />
+				</span>
+			</Marker>
 		{/each}
 	{/if}
 

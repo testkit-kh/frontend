@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { Plus, X } from '@lucide/svelte';
-	import { hypotheses } from '$lib/api/endpoints';
+	import { Plus, ScanSearch, SquareDashed, X } from '@lucide/svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { ApiError } from '$lib/api/client';
+	import { hypotheses, ml } from '$lib/api/endpoints';
 	import { offlineQueue } from '$lib/state/offlineQueue.svelte';
 	import PollutionMap from '$lib/map/PollutionMap.svelte';
 	import ReportList from '$lib/components/ReportList.svelte';
@@ -11,7 +14,11 @@
 	import BottomSheet from '$lib/components/BottomSheet.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import { ALL_TERRITORIES } from '$lib/data/territories';
-	import { resolveStaffTerritorySlug } from '$lib/data/orgTerritory';
+	import {
+		boundsFromParcels,
+		geometryCentroid,
+		resolveStaffTerritorySlug
+	} from '$lib/data/orgTerritory';
 	import type { TrashDetails } from '$lib/data/trash';
 	import { hypothesisToReport, mapLayersToReports } from '$lib/map/adapters';
 	import { reports } from '$lib/state/reports.svelte';
@@ -23,11 +30,6 @@
 
 	const isStaff = $derived(session.isStaff);
 	const authorName = $derived(session.name);
-	/** null = организация не сопоставлена с ООПТ на карте — остаёмся в обзоре. */
-	const myTerritorySlug = $derived(
-		isStaff ? resolveStaffTerritorySlug(session.organization, data.territories) : null
-	);
-	const territoryMismatch = $derived(isStaff && myTerritorySlug === null);
 
 	// Слой «кому принадлежит» — дополняющий, не критичный путь: пустой список
 	// при сбое не портит карту, поэтому ошибка проглатывается молча.
@@ -39,6 +41,264 @@
 			.catch(() => {});
 	});
 
+	/** null = организация не сопоставлена с ООПТ на карте — остаёмся в обзоре / своих границах. */
+	const myTerritorySlug = $derived(
+		isStaff ? resolveStaffTerritorySlug(session.organization, data.territories, parcels) : null
+	);
+	const myTerritory = $derived(
+		myTerritorySlug ? (data.territories.find((t) => t.id === myTerritorySlug) ?? null) : null
+	);
+	/** Есть свои границы, но нет слага каталога (кастомный OSM вроде relation/test). */
+	const catalogMismatch = $derived(
+		isStaff && myTerritorySlug === null && Boolean(session.organization?.has_territory)
+	);
+
+	/**
+	 * Ссылка из /findings «На карте» → ?lat=&lon=.
+	 * После выбора территории гасим, иначе flyTo точки блокирует fitBounds ООПТ.
+	 */
+	let suppressFocus = $state(false);
+	let lastFocusKey = $state('');
+	const focusFromUrl = $derived.by(() => {
+		const lat = Number(page.url.searchParams.get('lat'));
+		const lon = Number(page.url.searchParams.get('lon'));
+		if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+		if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+		// Не уводим в «нулевой остров» у Африки из битых координат.
+		if (Math.abs(lat) < 0.5 && Math.abs(lon) < 0.5) return null;
+		return { lat, lon };
+	});
+	$effect(() => {
+		const point = focusFromUrl;
+		if (!point) return;
+		const key = `${point.lat},${point.lon}`;
+		if (key !== lastFocusKey) {
+			lastFocusKey = key;
+			suppressFocus = false;
+		}
+	});
+	const focus = $derived(suppressFocus ? null : focusFromUrl);
+
+	let mapApi = $state<{
+		getMapBounds: () => {
+			bbox: [number, number, number, number];
+			zoom: number;
+		} | null;
+		fitActive: () => void;
+	} | null>(null);
+	/** Принудительный fitBounds при клике «Моя территория» / смене ООПТ. */
+	let viewEpoch = $state(0);
+
+	let mlOverlay = $state<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+	/** Ручной тумблер «Слой ML». Автоматически слой ещё виден, пока открыто окошко ИИ. */
+	let mlLayerManual = $state(false);
+	let mlScanning = $state(false);
+	let mlNote = $state<string | null>(null);
+	/** Рисование полигона для ИИ-проверки (отдельно от гипотез волонтёра). */
+	let mlDraw = $state(false);
+	let mlDraft = $state<[number, number][]>([]);
+
+	const mlPanelOpen = $derived(mlDraw || mlScanning || Boolean(mlNote));
+	const mlVisible = $derived(mlLayerManual || mlPanelOpen);
+
+	const mlMarkers = $derived.by(() => {
+		const out: Array<{
+			id: string;
+			lon: number;
+			lat: number;
+			label: string;
+			color?: string | null;
+		}> = [];
+		for (const feature of mlOverlay.features) {
+			const props = (feature.properties ?? {}) as Record<string, unknown>;
+			const id = String(props.id ?? props.detection_id ?? out.length);
+			let lon = Number(props.lon);
+			let lat = Number(props.lat);
+			if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+				const c = geometryCentroid(feature.geometry);
+				if (!c) continue;
+				[lon, lat] = c;
+			}
+			if (Math.abs(lon) < 0.5 && Math.abs(lat) < 0.5) continue;
+			out.push({
+				id,
+				lon,
+				lat,
+				label: String(props.label_ru ?? props.trash_category ?? 'Находка ML'),
+				color: typeof props.color === 'string' ? props.color : (props.color_hex as string | null)
+			});
+		}
+		return out;
+	});
+
+	async function refreshMlOverlay(scanId?: string) {
+		try {
+			mlOverlay = await ml.overlayGeojson({ limit: 30, scan_id: scanId });
+		} catch {
+			/* слой необязателен при первом открытии */
+		}
+	}
+
+	$effect(() => {
+		if (!session.profile) return;
+		refreshMlOverlay();
+	});
+
+	// С /findings «На карте» — показать слой ML у точки.
+	$effect(() => {
+		if (focus) mlLayerManual = true;
+	});
+
+	function bboxFromRing(ring: [number, number][]): [number, number, number, number] {
+		const lngs = ring.map(([lng]) => lng);
+		const lats = ring.map(([, lat]) => lat);
+		return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
+	}
+
+	function zoomForBbox(bbox: [number, number, number, number]): number {
+		const span = Math.max(bbox[2] - bbox[0], bbox[3] - bbox[1]);
+		if (span > 0.5) return 14;
+		if (span > 0.15) return 15;
+		if (span > 0.05) return 16;
+		if (span > 0.02) return 17;
+		return 18;
+	}
+
+	/** Сколько тайлов уйдёт в detect/area — от этого и оценка времени. */
+	function estimateTileCount(bbox: [number, number, number, number], zoom: number): number {
+		const z = Math.min(19, Math.max(1, Math.round(zoom)));
+		const n = 2 ** z;
+		const lon2x = (lon: number) => ((lon + 180) / 360) * n;
+		const lat2y = (lat: number) => {
+			const rad = (lat * Math.PI) / 180;
+			return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n;
+		};
+		const [west, south, east, north] = bbox;
+		const x0 = Math.floor(lon2x(west));
+		const x1 = Math.floor(lon2x(east));
+		const y0 = Math.floor(lat2y(north));
+		const y1 = Math.floor(lat2y(south));
+		return Math.max(1, (x1 - x0 + 1) * (y1 - y0 + 1));
+	}
+
+	/** Эмпирика: ~0.3–0.8 с на тайл (скачать + эвристика/модель). */
+	function formatScanEta(tiles: number): { label: string; low: number; high: number } {
+		const low = Math.max(2, Math.round(tiles * 0.3));
+		const high = Math.max(low + 1, Math.round(tiles * 0.75));
+		const fmt = (s: number) =>
+			s < 60 ? `${s} с` : `${Math.floor(s / 60)} мин ${s % 60 ? `${s % 60} с` : ''}`.trim();
+		return {
+			low,
+			high,
+			label: low === high ? `~${fmt(low)}` : `~${fmt(low)} – ${fmt(high)}`
+		};
+	}
+
+	const mlPreview = $derived.by(() => {
+		if (mlDraft.length < 2) return null;
+		const bbox = bboxFromRing(mlDraft);
+		const zoom = zoomForBbox(bbox);
+		const tiles = estimateTileCount(bbox, zoom);
+		return { bbox, zoom, tiles, eta: formatScanEta(tiles) };
+	});
+
+	let mlScanStartedAt = $state<number | null>(null);
+	let mlElapsedSec = $state(0);
+	$effect(() => {
+		if (!mlScanning || mlScanStartedAt == null) {
+			mlElapsedSec = 0;
+			return;
+		}
+		const tick = () => {
+			mlElapsedSec = Math.max(0, Math.round((Date.now() - mlScanStartedAt!) / 1000));
+		};
+		tick();
+		const id = setInterval(tick, 500);
+		return () => clearInterval(id);
+	});
+
+	async function runMlScan(bbox: [number, number, number, number], zoom: number) {
+		mlScanning = true;
+		mlScanStartedAt = Date.now();
+		mlNote = null;
+		const eta = formatScanEta(estimateTileCount(bbox, zoom));
+		try {
+			const scan = await ml.createScan({
+				bbox,
+				zoom: Math.min(19, Math.max(zoom, 15))
+			});
+			if (scan.geojson?.features?.length) {
+				mlOverlay = scan.geojson;
+			} else {
+				await refreshMlOverlay(scan.id);
+			}
+			const count = scan.summary?.count ?? scan.findings_count ?? mlOverlay.features.length;
+			const elapsed = Math.max(
+				1,
+				Math.round((Date.now() - (mlScanStartedAt ?? Date.now())) / 1000)
+			);
+			const parts = [
+				`Найдено объектов: ${count}`,
+				`заняло ${elapsed} с (оценка была ${eta.label})`
+			];
+			if (scan.candidates_suppressed || scan.imagery?.too_coarse) {
+				parts.push(
+					'Подложка грубая — кандидаты в очередь ООПТ не создавались (нормально для публичных тайлов).'
+				);
+			} else if (scan.hypotheses_created > 0) {
+				parts.push(`В очередь валидации: ${scan.hypotheses_created}`);
+			}
+			if (scan.imagery?.attribution) parts.push(scan.imagery.attribution);
+			mlNote = parts.join(' · ');
+		} catch (cause) {
+			mlNote =
+				cause instanceof ApiError
+					? cause.message
+					: 'Не удалось выполнить ML-скан. Проверьте, что сервис ml.* доступен.';
+		} finally {
+			mlScanning = false;
+			mlScanStartedAt = null;
+		}
+	}
+
+	async function scanViewport() {
+		if (mlScanning || !mapApi) return;
+		const view = mapApi.getMapBounds();
+		if (!view) {
+			mlNote = 'Карта ещё не готова.';
+			return;
+		}
+		if (view.zoom < 14) {
+			mlNote = 'Приблизьте карту (зум ≥ 14) или нарисуйте полигон кнопкой «Проверить ИИ».';
+			return;
+		}
+		await runMlScan(view.bbox, view.zoom);
+	}
+
+	function startMlDraw() {
+		mlDraw = true;
+		drawing = false;
+		draftPoint = null;
+		draftArea = [];
+		mlDraft = [];
+		selectedId = null;
+		sheetSnap = 'peek';
+		mlNote = null;
+	}
+
+	function cancelMlDraw() {
+		mlDraw = false;
+		mlDraft = [];
+	}
+
+	async function submitMlDraw() {
+		if (mlDraft.length < 3 || mlScanning) return;
+		const bbox = bboxFromRing(mlDraft);
+		const zoom = zoomForBbox(bbox);
+		mlDraw = false;
+		mlDraft = [];
+		await runMlScan(bbox, zoom);
+	}
 	/**
 	 * Настоящие точки с бэкенда.
 	 *
@@ -78,13 +338,22 @@
 		});
 	});
 
+	/** Свои границы без слага каталога — отдельный режим «дома». */
+	const HOME_ID = '__home__';
+	const parcelBounds = $derived(boundsFromParcels(parcels));
+	const homeId = $derived(myTerritorySlug ?? (parcelBounds ? HOME_ID : null));
+
 	let picked = $state<string | null>(null);
-	const activeId = $derived(picked ?? myTerritorySlug ?? ALL_TERRITORIES);
-	/** null — обзор всей страны. */
+	const activeId = $derived(picked ?? homeId ?? ALL_TERRITORIES);
+	const homeActive = $derived(activeId === HOME_ID);
+	/** null — обзор страны или «дом» по своим участкам. */
 	const territory = $derived(
-		activeId === ALL_TERRITORIES ? null : (data.territories.find((t) => t.id === activeId) ?? null)
+		activeId === ALL_TERRITORIES || activeId === HOME_ID
+			? null
+			: (data.territories.find((t) => t.id === activeId) ?? null)
 	);
-	const overview = $derived(territory === null);
+	const overview = $derived(activeId === ALL_TERRITORIES);
+	const mapHomeBounds = $derived(homeActive ? parcelBounds : null);
 
 	let selectedId = $state<string | null>(null);
 	let sheetSnap = $state<'peek' | 'half' | 'full'>('half');
@@ -95,7 +364,7 @@
 
 	const visible = $derived(isStaff ? reports.items : reports.visibleTo(authorName));
 	const inTerritory = $derived(
-		overview ? visible : visible.filter((r) => r.territoryId === territory!.id)
+		overview || homeActive ? visible : visible.filter((r) => r.territoryId === territory!.id)
 	);
 
 	let filter = $state<'all' | ReportStatus>('all');
@@ -104,12 +373,12 @@
 	);
 
 	const health = $derived(
-		overview
+		overview || homeActive || !territory
 			? {
 					open: inTerritory.filter((r) => r.status !== 'rejected').length,
 					mood: overallMood(visible)
 				}
-			: territoryHealth(visible, territory!.id)
+			: territoryHealth(visible, territory.id)
 	);
 
 	const selected = $derived(reports.items.find((r) => r.id === selectedId) ?? null);
@@ -141,16 +410,25 @@
 	});
 
 	function mapClick(coordinates: [number, number]) {
+		if (mlDraw) {
+			mlDraft = [...mlDraft, coordinates];
+			return;
+		}
 		if (kind === 'trash') draftPoint = coordinates;
 		else draftArea = [...draftArea, coordinates];
 	}
 
 	function undo() {
+		if (mlDraw) {
+			mlDraft = mlDraft.slice(0, -1);
+			return;
+		}
 		if (kind === 'trash') draftPoint = null;
 		else draftArea = draftArea.slice(0, -1);
 	}
 
 	function startDrawing() {
+		cancelMlDraw();
 		drawing = true;
 		// Наполовину, а не целиком: человек ставит точку на карте, и форма не
 		// должна её закрывать.
@@ -213,9 +491,25 @@
 		selectedId = report.id;
 	}
 
+	function clearMapFocusFromUrl() {
+		if (!page.url.searchParams.has('lat') && !page.url.searchParams.has('lon')) return;
+		const next = new URL(page.url);
+		next.searchParams.delete('lat');
+		next.searchParams.delete('lon');
+		void goto(`${next.pathname}${next.search}${next.hash}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
+	}
+
 	function selectTerritory(id: string) {
+		suppressFocus = true;
+		clearMapFocusFromUrl();
 		picked = id;
+		selectedId = null;
 		sheetSnap = 'half';
+		viewEpoch += 1;
 	}
 
 	// Рисовать точку в обзоре страны нельзя: непонятно, к какой территории её
@@ -227,19 +521,191 @@
 
 <div class="absolute inset-0">
 	<PollutionMap
+		bind:mapApi
 		items={shown}
 		territories={data.territories}
 		activeTerritory={territory}
 		{selectedId}
 		onselect={(id) => (selectedId = id)}
 		{route}
-		drawMode={drawing ? (kind === 'trash' ? 'point' : 'area') : 'off'}
-		draft={kind === 'trash' ? (draftPoint ? [draftPoint] : []) : draftArea}
+		drawMode={mlDraw ? 'area' : drawing ? (kind === 'trash' ? 'point' : 'area') : 'off'}
+		draft={mlDraw ? mlDraft : kind === 'trash' ? (draftPoint ? [draftPoint] : []) : draftArea}
 		onmapclick={mapClick}
 		onterritory={selectTerritory}
 		{parcels}
+		{mlOverlay}
+		{mlVisible}
+		{mlMarkers}
+		{focus}
+		{viewEpoch}
+		homeBounds={mapHomeBounds}
 	/>
 </div>
+
+<!-- Компактные кнопки слева сверху — не перекрывают сайдбар (он тоже слева,
+     но кнопки узкие). Панель рисования ИИ — справа. -->
+<div
+	class="absolute top-4 left-4 z-20 flex max-w-[min(100%-2rem,16rem)] flex-col gap-2 md:left-[calc(1rem+20rem+0.75rem)]"
+	style="padding-top: env(safe-area-inset-top)"
+>
+	<div class="flex flex-wrap gap-2">
+		<button
+			type="button"
+			aria-pressed={mlVisible}
+			onclick={() => (mlLayerManual = !mlLayerManual)}
+			class="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm aria-pressed:border-violet-300 aria-pressed:bg-violet-50 aria-pressed:text-violet-900"
+		>
+			Слой ML
+		</button>
+		{#if isStaff || session.hasMapAccess}
+			<button
+				type="button"
+				disabled={mlScanning || overview || mlDraw}
+				onclick={scanViewport}
+				class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+			>
+				<ScanSearch size={14} />
+				{mlScanning ? '…' : 'Скан'}
+			</button>
+			<button
+				type="button"
+				disabled={mlScanning}
+				onclick={() => (mlDraw ? cancelMlDraw() : startMlDraw())}
+				class="flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white shadow-sm hover:bg-slate-700 disabled:opacity-50"
+			>
+				<SquareDashed size={14} />
+				Проверить ИИ
+			</button>
+		{/if}
+	</div>
+</div>
+
+{#if mlDraw || mlScanning || mlNote}
+	<!-- Правая карточка: не пересекается с BottomSheet (слева на md, снизу на mobile). -->
+	<aside
+		class="absolute top-4 right-4 z-20 flex w-[min(100%-2rem,18rem)] flex-col gap-3 rounded-xl border border-violet-200 bg-white/95 p-3 shadow-lg backdrop-blur"
+		style="padding-top: max(0.75rem, env(safe-area-inset-top)); margin-bottom: env(safe-area-inset-bottom)"
+		aria-label="Проверка ИИ"
+	>
+		<div class="flex items-start justify-between gap-2">
+			<div class="min-w-0">
+				<p class="text-sm font-semibold text-violet-950">
+					{#if mlScanning}
+						ИИ считает…
+					{:else if mlDraw}
+						Полигон для ИИ
+					{:else}
+						Результат ИИ
+					{/if}
+				</p>
+				<p class="mt-0.5 text-[11px] leading-snug text-slate-500">
+					{#if mlDraw}
+						Кликайте по карте (≥3 точки), затем отправьте.
+					{:else if mlScanning}
+						Не закрывайте вкладку — идёт загрузка тайлов и детекция.
+					{:else}
+						Фиолетовый слой и маркеры на карте.
+					{/if}
+				</p>
+			</div>
+			<button
+				type="button"
+				onclick={() => {
+					if (mlScanning) return;
+					cancelMlDraw();
+					mlNote = null;
+				}}
+				disabled={mlScanning}
+				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
+				aria-label="Закрыть"
+			>
+				<X size={16} />
+			</button>
+		</div>
+
+		{#if mlDraw}
+			<div class="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-950">
+				<p>
+					Точек: <span class="font-semibold">{mlDraft.length}</span>
+					{#if mlDraft.length < 3}
+						<span class="text-violet-700"> · нужно ещё {3 - mlDraft.length}</span>
+					{/if}
+				</p>
+				{#if mlPreview}
+					<p class="mt-1 text-violet-800">
+						~{mlPreview.tiles} тайл{mlPreview.tiles === 1 ? '' : mlPreview.tiles < 5 ? 'а' : 'ов'} · зум
+						{mlPreview.zoom}
+					</p>
+					<p class="mt-0.5 font-medium text-violet-900">
+						Оценка рендера: {mlPreview.eta.label}
+					</p>
+				{:else}
+					<p class="mt-1 text-violet-700">Поставьте ещё точки — появится оценка времени.</p>
+				{/if}
+			</div>
+
+			<div class="flex gap-2">
+				<button
+					type="button"
+					onclick={cancelMlDraw}
+					class="min-h-10 flex-1 rounded-full border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
+				>
+					Отменить
+				</button>
+				<button
+					type="button"
+					disabled={mlDraft.length === 0}
+					onclick={undo}
+					class="min-h-10 rounded-full border border-slate-200 px-3 text-xs text-slate-600 disabled:opacity-40"
+				>
+					Undo
+				</button>
+			</div>
+			<button
+				type="button"
+				disabled={mlDraft.length < 3 || mlScanning}
+				onclick={submitMlDraw}
+				class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-violet-700 px-4 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-40"
+			>
+				<ScanSearch size={16} />
+				Отправить ИИ
+				{#if mlPreview}
+					<span class="font-normal opacity-90">· {mlPreview.eta.label}</span>
+				{/if}
+			</button>
+		{:else if mlScanning}
+			<div class="rounded-lg bg-violet-50 px-3 py-3 text-xs text-violet-950">
+				<p class="font-medium">Идёт рендер…</p>
+				<p class="mt-1 text-violet-800 tabular-nums">Прошло {mlElapsedSec} с</p>
+				<p class="mt-2 text-[11px] text-violet-700">
+					Обычно от нескольких секунд до пары минут — зависит от площади и зума.
+				</p>
+				<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-violet-200">
+					<div
+						class="h-full animate-pulse rounded-full bg-violet-600"
+						style="width: {Math.min(92, 12 + mlElapsedSec * 4)}%"
+					></div>
+				</div>
+			</div>
+			<button
+				type="button"
+				disabled
+				class="min-h-10 w-full rounded-full border border-slate-200 text-xs text-slate-400"
+			>
+				Отмена недоступна во время скана
+			</button>
+		{:else if mlNote}
+			<p class="text-xs leading-relaxed text-slate-700">{mlNote}</p>
+			<button
+				type="button"
+				onclick={() => (mlNote = null)}
+				class="min-h-10 w-full rounded-full border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
+			>
+				Закрыть
+			</button>
+		{/if}
+	</aside>
+{/if}
 
 <BottomSheet bind:snap={sheetSnap} label={drawing ? 'Новая гипотеза' : 'Точки загрязнения'}>
 	{#snippet header()}
@@ -249,7 +715,8 @@
 					<Logo mood={health.mood} size={36} />
 					<div class="min-w-0 flex-1">
 						<h1 class="truncate text-base font-semibold text-slate-900">
-							{territory?.name ?? 'Вся Россия'}
+							{territory?.name ??
+								(homeActive ? (myTerritory?.name ?? 'Моя территория') : 'Вся Россия')}
 						</h1>
 						<p
 							class="mt-0.5 text-xs {health.mood === 'dirty'
@@ -271,29 +738,26 @@
 					</p>
 				{/if}
 
-				{#if territoryMismatch}
+				{#if catalogMismatch && !homeActive}
 					<p class="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
-						Организация
-						{#if session.organizationName}
-							«{session.organizationName}»
+						Границы заданы, но OSM-id не из каталога ООПТ
+						{#if session.organization?.territory_osm_id}
+							({session.organization.territory_osm_id})
 						{/if}
-						не сопоставлена с ООПТ на карте
-						{#if session.organization && !session.organization.has_territory}
-							— задайте границы в кабинете
-						{:else if session.organization?.territory_osm_id}
-							(OSM {session.organization.territory_osm_id} нет в списке территорий)
-						{:else}
-							— показан обзор всей России
-						{/if}.
+						— откройте «Моя территория» по вашим участкам. Юрлицо в шапке — оператор, не название ООПТ.
+					</p>
+				{:else if isStaff && myTerritorySlug === null && !session.organization?.has_territory}
+					<p class="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+						Задайте границы территории в кабинете ООПТ — иначе карта остаётся в обзоре страны.
 					</p>
 				{/if}
 
 				<TerritoryPicker
 					territories={data.territories}
-					value={activeId}
+					value={activeId === HOME_ID ? (homeId ?? ALL_TERRITORIES) : activeId}
 					onchange={selectTerritory}
 					locked={isStaff}
-					myTerritoryId={myTerritorySlug}
+					myTerritoryId={homeId}
 				/>
 
 				<div class="flex gap-1 rounded-full bg-slate-100 p-1 text-xs">

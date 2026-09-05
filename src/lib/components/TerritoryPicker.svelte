@@ -37,7 +37,7 @@
 	});
 
 	function pickHome() {
-		// Нет матча → обзор страны, а не первая ООПТ из списка.
+		// homeId может быть слагом каталога или __home__ (свои участки).
 		onchange(myTerritoryId ?? ALL_TERRITORIES);
 	}
 </script>

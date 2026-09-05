@@ -129,7 +129,7 @@
 		busy = true;
 		error = null;
 		try {
-			const updated = await parcelsApi.setGeometry(parcelId, chosen.geometry as never);
+			const updated = await parcelsApi.setGeometry(parcelId, chosen.geometry as never, 'osm');
 			items = items.map((p) => (p.id === parcelId ? updated : p));
 			savedNote = `Границы записаны участку из OSM: ${chosen.name}.`;
 			chosen = null;

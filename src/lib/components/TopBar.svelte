@@ -8,6 +8,7 @@
 		GraduationCap,
 		LogOut,
 		Map,
+		Radar,
 		ShieldCheck
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
@@ -24,9 +25,6 @@
 
 	const profile = $derived(session.profile);
 
-	// Имя ООПТ прямо из профиля staff — не зависит от слагов territories.json.
-	const orgName = $derived(session.organizationName ?? '');
-
 	// Знак в шапке живой: хмурится, когда по стране много неубранных точек.
 	// Это единственный индикатор состояния, который человек видит всегда.
 	const mood = $derived(overallMood(reports.items));
@@ -40,11 +38,13 @@
 			: session.isStaff
 				? [
 						{ href: resolve('/map'), label: 'Карта', icon: Map },
+						{ href: resolve('/findings'), label: 'Находки', icon: Radar },
 						{ href: resolve('/org'), label: 'Кабинет ООПТ', icon: Building2 }
 					]
 				: session.hasMapAccess
 					? [
 							{ href: resolve('/map'), label: 'Карта', icon: Map },
+							{ href: resolve('/findings'), label: 'Находки', icon: Radar },
 							// Уборки — вторая половина смысла для волонтёра: точка без
 							// выезда так и остаётся точкой.
 							{ href: resolve('/events'), label: 'Уборки', icon: CalendarDays }
@@ -96,7 +96,7 @@
 				{session.isCoordinator
 					? 'Координатор Фонда'
 					: session.isStaff
-						? `Сотрудник ООПТ${orgName ? ` · ${orgName}` : ''}`
+						? 'Сотрудник ООПТ'
 						: 'Волонтёр'}
 			</p>
 		</div>

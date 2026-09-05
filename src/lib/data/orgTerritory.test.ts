@@ -108,4 +108,35 @@ describe('resolveStaffTerritorySlug', () => {
 			)
 		).toBeNull();
 	});
+
+	it('falls back to parcel OSM id when org osm is custom (relation/test)', () => {
+		const parcels: GeoJSON.FeatureCollection = {
+			type: 'FeatureCollection',
+			features: [
+				{
+					type: 'Feature',
+					properties: { description: 'OSM:relation/5576397 · участок' },
+					geometry: {
+						type: 'Polygon',
+						coordinates: [
+							[
+								[0.2, 0.2],
+								[0.8, 0.2],
+								[0.8, 0.8],
+								[0.2, 0.8],
+								[0.2, 0.2]
+							]
+						]
+					}
+				}
+			]
+		};
+		expect(
+			resolveStaffTerritorySlug(
+				{ name: 'ООО ОЛЕГ', territory_osm_id: 'relation/test', has_territory: true },
+				territories,
+				parcels
+			)
+		).toBe('komandorsky');
+	});
 });
